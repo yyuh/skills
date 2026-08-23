@@ -1,0 +1,5 @@
+# 登录态缓存（per-机器 per-微信账号，首次 --headful 扫码生成，不随 skill 分发）
+.gzh-profile-dir/
+
+# 运行时产物
+outputs/
