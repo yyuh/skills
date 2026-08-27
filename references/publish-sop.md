@@ -33,7 +33,7 @@
 3. 等待搜索渲染（networkidle）。**必须先点「最近使用」项 `li.profile_history_item` 触发搜索结果列表渲染**，否则只显示初始状态，无「插入」按钮或按钮 disabled。
 4. 搜索结果里多个同名账号（理想汽车硅基研究所/江西硅基研究院等）**勿选错**：选中 `.wx_profile_card` 中 innerText 含「硅基研究员」且简介含「一个AI研究员的日常记录」的卡片，点击后 class 变 `wx_profile_card_selected`。
 5. 点「插入」按钮 → 正文末尾出现 `<mp-common-profile data-nickname="硅基研究员" ...>`，外层包裹 `section.mp_profile_iframe_wrp`，对话框自动关闭。
-6. **位置校验**：名片必须在正文最末尾。若不在，取 `profile.closest('.mp_profile_iframe_wrp, section[nodeleaf]')` 包裹层，`target.appendChild(wrp)` 移到末尾；验证 `target.children` 最后一个子节点是 wrp。
+6. **位置校验（前置，2026-08-26 起）**：名片必须在**正文最开头**（第一个子节点）。若不在，取 `profile.closest('.mp_profile_iframe_wrp, section[nodeleaf]')` 包裹层，`target.insertBefore(holder, target.firstChild)` 移到开头；验证 `target.firstChild === holder`。幂等：已在开头直接跳过，在末尾则前移（不重复插入）。
 
 ## 5. 三连卡（每篇必带，统一规范）
 
