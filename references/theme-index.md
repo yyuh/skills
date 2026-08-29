@@ -9,7 +9,10 @@
 | 主题 | 主色 | 适用场景 | 组件库文件 | 正文下划线 CSS |
 |------|------|---------|-----------|---------------|
 | 摸鱼绿 | `#059669` emerald | 教程、测评、清单、工具盘点、内刊手记、系统说明（卡片丰富、信息密度高，默认推荐） | `references/theme-moyu-green.md` | `border-bottom:2px solid #A7F3D0;font-weight:600;` |
-| 红白色系 | `#DC2626` 正红 | 深度分析、观点、设计评论、随笔禅意、力量感话题（经典编辑风，编号章节+引言卡+签名区，红色克制点睛） | `references/theme-red-white.md` | `border-bottom:2px solid #FECACA;font-weight:600;` |
+| 瑞士极简 | `#FFFFFF` 白底 + `#E63946` 瑞士红 | 深度短文、观点、设计评论、科技观察（网格感+超粗无衬线+顶部信息栏+三列meta，瑞士国际主义） | `references/theme-swiss-minimal.md` | `font-weight:900;color:#000;`（无下划线，纯粗体） |
+| 包豪斯几何 | `#E63946` 红 + `#F4D35E` 黄 + `#2A9D8F` 蓝 | 设计评论、艺术、科技美学、观点（三原色+圆形/方形/三角形几何元素+深色Hero区，经典设计风） | `references/theme-bauhaus.md` | `color:#E63946;font-weight:700;` |
+| 日式杂志 | `#FAFAF8` 米白 + `#B89070` 暖棕 + 大量留白 | 生活美学、随笔、禅意、设计评论、个人感悟（大量留白+竖排感+日文小字+汉字美学，MUJI风极简） | `references/theme-japanese-mag.md` | `color:#2A2A2A;font-weight:600;` |
+| 新丑撞色 | `#FF6B9D` 粉 + `#3B82F6` 蓝 + `#FFE500` 黄 + 3px粗黑边 | 宣言、观点、潮流话题、反主流态度（高饱和三色+粗黑边框+硬阴影+无圆角，Neo-Brutalism硬派冲击） | `references/theme-neo-brutalism.md` | `background:#FFE500;font-weight:700;padding:0 3px;` |
 
 ## 选择建议
 

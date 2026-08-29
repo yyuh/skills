@@ -69,7 +69,7 @@
     <span leaf=""><img src="图片URL" style="max-width:100%;height:auto;display:block;margin:0 auto;"></span>
   </section>
 </section>
-<p style="font-size:12px;color:#9CA3AF;text-align:center;margin:0 0 24px;">
+<p style="font-size:15px;color:#9CA3AF;text-align:center;margin:0 0 24px;">
   <span leaf="">— 图片说明文字</span>
 </p>
 ```
@@ -87,8 +87,8 @@
   </section>
 </section>
 <p style="text-align:center;margin:0 0 24px;">
-  <span style="display:inline-block;background:#FEE2E2;color:#991B1B;font-size:11px;font-weight:700;padding:1px 8px;border-radius:4px;margin-right:6px;"><span leaf="">GIF 动图</span></span>
-  <span style="font-size:12px;color:#9CA3AF;"><span leaf="">动图说明文字</span></span>
+  <span style="display:inline-block;background:#FEE2E2;color:#991B1B;font-size:14px;font-weight:700;padding:1px 8px;border-radius:4px;margin-right:6px;"><span leaf="">GIF 动图</span></span>
+  <span style="font-size:15px;color:#9CA3AF;"><span leaf="">动图说明文字</span></span>
 </p>
 ```
 
@@ -102,9 +102,9 @@
 
 ```html
 <section style="margin:0 0 24px;padding:30px 20px;border:1.5px dashed #DAD7D2;border-radius:14px;background:#FAFAF8;text-align:center;">
-  <p style="margin:0 0 10px;font-size:26px;line-height:1;"><span leaf="">🎬</span></p>
-  <p style="margin:0;font-size:14px;font-weight:700;color:#9CA3AF;letter-spacing:1px;"><span leaf="">待补素材</span></p>
-  <p style="margin:8px 0 0;font-size:13px;color:#B8B5B0;line-height:1.7;"><span leaf="">此处插入：创建 skill 的录屏演示</span></p>
+  <p style="margin:0 0 10px;font-size:33px;line-height:1;"><span leaf="">🎬</span></p>
+  <p style="margin:0;font-size:18px;font-weight:700;color:#9CA3AF;letter-spacing:1px;"><span leaf="">待补素材</span></p>
+  <p style="margin:8px 0 0;font-size:16px;color:#B8B5B0;line-height:1.7;"><span leaf="">此处插入：创建 skill 的录屏演示</span></p>
 </section>
 ```
 
@@ -129,7 +129,7 @@
 ### 3a. 左竖条小标题（最推荐，干净）
 
 ```html
-<p style="margin:28px 0 14px;font-size:16px;font-weight:800;color:#1C1917;line-height:1.5;border-left:4px solid #DC2626;padding-left:12px;">
+<p style="margin:28px 0 14px;font-size:21px;font-weight:800;color:#1C1917;line-height:1.5;border-left:4px solid #DC2626;padding-left:12px;">
   <span leaf="">小标题文字</span>
 </p>
 ```
@@ -138,14 +138,14 @@
 
 ```html
 <p style="margin:28px 0 14px;">
-  <span style="display:inline-block;background:#DC2626;color:#FFFFFF;font-size:14px;font-weight:700;padding:5px 16px;border-radius:6px;"><span leaf="">小标题文字</span></span>
+  <span style="display:inline-block;background:#DC2626;color:#FFFFFF;font-size:18px;font-weight:700;padding:5px 16px;border-radius:6px;"><span leaf="">小标题文字</span></span>
 </p>
 ```
 
 ### 3c. 序号药丸 + 标题（清单/步骤）
 
 ```html
-<p style="margin:24px 0 12px;font-size:15px;font-weight:800;color:#1C1917;line-height:1.6;">
+<p style="margin:24px 0 12px;font-size:19px;font-weight:800;color:#1C1917;line-height:1.6;">
   <span style="display:inline-block;background:#FEE2E2;color:#991B1B;border-radius:5px;padding:1px 9px;margin-right:8px;font-weight:900;"><span leaf="">01</span></span>
   <span leaf="">要点标题</span>
 </p>
@@ -155,7 +155,7 @@
 
 ```html
 <section style="margin:0 0 24px;background:#FEF2F2;border-radius:0 10px 10px 0;border-left:4px solid #DC2626;padding:16px 20px;">
-  <p style="font-size:16px;font-weight:800;color:#991B1B;margin:0;line-height:1.8;">
+  <p style="font-size:21px;font-weight:800;color:#991B1B;margin:0;line-height:1.8;">
     <span leaf="">「这里是核心观点或关键金句」</span>
   </p>
 </section>
@@ -166,9 +166,9 @@
 ```html
 <section style="margin:0 0 24px;background:#FEF2F2;border-radius:0 8px 8px 0;border-left:4px solid #DC2626;padding:14px 18px;">
   <p style="margin:0 0 6px;">
-    <span style="display:inline-block;background:#DC2626;color:#FFFFFF;font-size:11px;font-weight:700;padding:2px 10px;border-radius:4px;letter-spacing:1px;"><span leaf="">提示</span></span>
+    <span style="display:inline-block;background:#DC2626;color:#FFFFFF;font-size:14px;font-weight:700;padding:2px 10px;border-radius:4px;letter-spacing:1px;"><span leaf="">提示</span></span>
   </p>
-  <p style="font-size:14px;color:#374151;margin:0;line-height:1.8;">
+  <p style="font-size:18px;color:#374151;margin:0;line-height:1.8;">
     <span leaf="">提示或旁注的正文内容</span>
   </p>
 </section>
