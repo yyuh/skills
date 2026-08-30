@@ -35,9 +35,9 @@ playwright install chromium
 
 ## 六个固定决策
 
-1. **排版主题（两风格轮换）**：用户没指定时**默认轮换**——上篇用摸鱼绿 `moyu-green`，本篇用红白色系 `red-white`，下篇再回摸鱼绿，如此交替。题材映射仅用于用户明确「自动排」时：
-   - 教程/干货/清单/工具盘点/测评/内刊手记/系统说明 → 摸鱼绿 moyu-green（默认）
-   - 观点/深度分析/设计评论/随笔禅意 → 红白色系 red-white
+1. **排版主题（默认新丑撞色）**：用户没指定时**默认用新丑撞色 `neo-brutalism`**（用户偏好，2026-08-28 确认，已删除摸鱼绿/红白）。题材映射仅用于用户明确「自动排」时：
+   - 教程/干货/清单/工具盘点/测评/内刊手记/系统说明/宣言/观点/潮流话题 → 新丑撞色 neo-brutalism（默认）
+   - 观点/深度分析/设计评论/随笔禅意 → 瑞士极简 swiss-minimal
    - 主题索引单一来源：`references/theme-index.md`
 2. **存草稿箱**：默认执行，不打断用户。登录失效 → 提示用户用 `--headful` 扫码（本 skill 输出提示，由宿主 Agent 通道发送）。
 3. **作者名**：`{{作者名}}` 占位（默认「硅基研究员」），简介一句。
@@ -48,7 +48,7 @@ playwright install chromium
 ## 执行流程（7 步）
 
 1. **输入归一化** → 非 Markdown 先按 `references/format-normalize.md` 转 Markdown（docx 用 `scripts/extract_docx.py`，PDF 分页读取清噪，纯文本语义推断结构）。
-2. **选主题** → 读 `references/theme-index.md` 按题材选（见决策 1，默认轮换）。
+2. **选主题** → 读 `references/theme-index.md` 按题材选（见决策 1，默认新丑撞色）。
 3. **排版** → 读所选主题组件库 `references/theme-{标识}.md` + 通用库 `references/common-components.md`，按「文章类型 → 组件组合配方表」装配纯 `<section>` HTML。HTML 一律从组件库取，不凭记忆手写。
 4. **校验（强制）** → `scripts/validate_gzh_html.py <生成的.html>`，ERROR 清零 + 半角标点 WARNING 清零才算完成。半角引号用 `scripts/fix_quotes.py <生成的.html>` 一键转全角后再复验。
 5. **生成预览** → `scripts/wrap_preview.py <干净正文.html>`，产出带「复制到公众号」按钮的 `_预览.html`。
@@ -64,15 +64,15 @@ playwright install chromium
 - **选篇标准**：优先 **AI / 开发者工具 / 编程向**，契合「硅基研究员」AI + 硬件定位；挑 star 高、简介清晰、普通读者能读懂、有「上手价值」的仓库。
 - **取详情**：对选中的仓库再 WebFetch 一次 `https://github.com/{owner}/{repo}`，抽取「是什么 / 核心能力 / 怎么上手 / 许可证 / 注意事项」，作为正文素材。
 - **⚠️ 环境注意（关键）**：本机 Windows 应用控制策略（WDAC/AppLocker）**拦 Playwright 的 DLL**，所以**抓取走 WebFetch（宿主网络），绝不要为了抓榜去调浏览器 / Playwright**。若日后要写脚本稳定批量抓取，用 `requests` + **系统 Python 3.14**（managed Python 装包会被 `_socket` 拦），不要把 `scripts/fetch_github_trending.py` 写成 Playwright 版。
-- **衔接示例**：抓到前十 → 选 `openai/codex`（日榜第一）→ WebFetch 该仓库详情 → 按决策 1 选主题（工具盘点→摸鱼绿 / 观点→红白）→ 走 7 步。
+- **衔接示例**：抓到前十 → 选 `openai/codex`（日榜第一）→ WebFetch 该仓库详情 → 按决策 1 选主题（默认新丑撞色）→ 走 7 步。
 
 ## 可选功能：自助选题（选题来源与输入形态）
 
 本公众号只发 **AI 类**内容。选题来源分两类：**自动抓取源**（Agent 主动扫）+ **用户驱动输入**（你给料，Agent 加工）。无论哪种来源，定稿后都汇入 7 步流水线（排版→校验→预览→存稿），登录过期走「登录握手协议」。
 
-> ⚠️ 早期记忆里写的「四源扫描」是误记——实际只有下面 ① 与 ④ 两个自动抓取源，其余输入由你直接提供，不自动爬。
+> ⚠️ 早期记忆里写的「四源扫描」是误记——实际自动抓取源是 ① GitHub 热榜、④ AI 媒体热点、⑤ 公众号爆款选题（2026-08-30 新增，见下节）；其余输入由你直接提供，不自动爬。
 
-### A. 自动抓取源（Agent 主动扫，仅 2 个）
+### A. 自动抓取源（Agent 主动扫）
 
 - **① GitHub 热榜** —— 已实现，见上节「可选功能：爬取 GitHub 热榜」。
 - **④ AI 媒体 / 社区热点** —— 抓 AI 垂类媒体首页/头条，选 1 篇 AI 向热点 → 取正文/要点 → 排版。默认清单（可增删）：`机器之心`、`量子位`、`36氪AI`。触发词：「抓 AI 热点」「扫一下 AI 资讯」「从 AI 媒体找选题」「看看今天 AI 圈有啥」。
@@ -80,6 +80,8 @@ playwright install chromium
   - **SPA 站（机器之心 / 36氪）**：纯 urllib 抽不到锚点（已实测返回「无候选」），改由 Agent 直接 **WebFetch 其首页** 解析头条（同 GitHub 热榜逻辑），避开 Playwright（见环境坑）。脚本对这俩会优雅跳过，不报错。
   - **取详情**：对选中的文章 URL 再 WebFetch 一次，抽「核心事实 / 观点 / 数据 / 引用」，作为正文素材（SPA 站尤其要用 WebFetch 而非 urllib）。
   - 抓取一律**避开 Playwright**（本机 WDAC 拦 DLL）；网络不稳时换站点或重试。
+
+- **⑤ 公众号爆款选题** —— 抓公众号生态内爆款（赛道分析 + 低粉高阅读收录），完整方法论见 `references/topic-research.md`。触发词：「抓公众号爆款」「分析这篇爆款」「为什么这篇火了」「低粉高阅读」「收录一篇爆款」。用 `scripts/analyze_viral_article.py` 按 8 维度拆解。
 
 ### B. 用户驱动输入（你给料，Agent 加工，3 种形态）
 
@@ -92,13 +94,76 @@ playwright install chromium
 - 自动源（A）抓取后，按决策 1 选主题 → 走 7 步；B 类输入直接进 7 步第 3 步「排版」（已是你定稿的素材，无需再选题）。
 - 任一来源产出的文章，都按「六个固定决策」处理标题、作者、名片、三连卡；登录失效触发「登录握手协议」。
 
+## 可选功能：公众号爆款选题（2026-08-30 新增）
+
+公众号生态内选题补充，三条路：赛道爆款分析 / 低粉高阅读收录 / 用户投喂。完整方法论见 `references/topic-research.md`。
+
+- **触发词**：「抓公众号爆款」「分析这篇爆款」「为什么这篇火了」「低粉高阅读」「收录一篇爆款」。
+- **赛道爆款分析**：用户给赛道关键词 → Agent 用 WebFetch/general_search 检索该赛道公众号爆款（新榜、公众号聚合平台、行业榜单）→ 用 `scripts/analyze_viral_article.py` 按 8 维度拆解（标题公式/爆款点/开头钩子/结构骨架/数据支撑/写作风格/可复用模板/风险提示）→ 产出 `outputs/topic_analysis_<日期>.md`。
+- **低粉高阅读收录**：关注粉丝少但阅读高的号（比大号更值得学）→ 用户贴文章 → 同一套拆解 → 进选题候选池。
+- **脚本用法**：
+  ```bash
+  python scripts/analyze_viral_article.py --url "爆款URL"   # 先登记，Agent 用 WebFetch 抓正文
+  python scripts/analyze_viral_article.py --text "全文/要点" --save outputs/topic_analysis_20260830.md
+  ```
+- **衔接**：拆解出选题方向 → 用户选定 → 走 7 步流水线（标题生成用 `generate_titles.py`）。
+- **纪律**：公众号是私域，选题要对老读者有持续增量价值；爆款 = 50% 选题 + 30% 标题封面 + 20% 内容表达。
+
+## 可选功能：标题生成 + 评分（2026-08-30 新增）
+
+补强决策 4（标题）：批量生成候选 → 统一评分 → 风险标注 → 排序。脚本 `scripts/generate_titles.py`。
+
+- **触发词**：「起几个标题」「标题候选」「帮我想标题」「标题评分」。
+- **用法**：
+  ```bash
+  # 生成候选（Agent 按 8 大公式批量产出，规则 ≤22字/无特殊符号/含关键词+数字）
+  python scripts/generate_titles.py "主题" --sell "卖点1,卖点2" --num 12 --save outputs/title_candidates.md
+  # 对单个候选评分（100 分制，7 维度）
+  python scripts/generate_titles.py "4000星项目教你写工业级提示词" --sell __score__
+  ```
+- **评分维度**：关键词相关(20)/数字价值感(15)/情绪钩子(20)/字数控制(15)/无特殊符号(10)/目标读者(10)/平台合规(10)。
+- **风险标注**：标题党/敏感词/特殊符号/超长/同质化。
+- **衔接**：选定标题后进入 7 步流水线的标题步骤，与文风档案 `references/my-voice.md` 的标题风格一致。
+
+## 可选功能：图表配图（2026-08-30 新增）
+
+正文含结构化信息时配图（流程/对比/逻辑图等）。完整规格见 `references/chart-guide.md`。
+
+- **触发词**：「配图」「出图」「加个图」「画个流程图」「做个对比图」。
+- **10 类图表**：流程图/架构图/思维导图/对比图/时间线/SWOT/数据图表/关系图/概念示意图/清单卡。
+- **两条出图路径**：① 模型出图（`image_gen`，视觉冲击力强，视觉类首选）；② HTML 出图（思维导图/关系图等文字类首选，生成 HTML → 浏览器 → 截图 PNG）。
+- **公众号规范**：头图 2.35:1（1280×545）、正文 16:9 或 3:2、方图 1:1；`<img>` 用 `max-width:100%;height:auto` 不铺满；一篇文章 2-4 张为宜。
+- **衔接**：配图生成后交给排版步骤嵌入正文；头图单独走 `check_cover.py` 安全区校验。
+
+## 可选功能：封面分享安全区校验（2026-08-30 新增）
+
+公众号头图是 2.35:1，但**分享到朋友圈/聊天时只保留正中央 42.6% 的 1:1 方形**，左右各裁 28.7%。封面标题/logo 铺满全宽 → 分享出去两头被切。脚本 `scripts/check_cover.py` 生成安全区标注页。
+
+- **触发时机**：每次生成/设置封面后自动跑一遍（或用户说「检查封面」「封面安全区」）。
+- **用法**：
+  ```bash
+  python scripts/check_cover.py "outputs/封面.png" --out "outputs/封面_安全区检查.html" --title "封面描述"
+  # 可选：--text-x "300,900" 标注标题文字水平范围，用于文字越界判定
+  ```
+- **判读**：绿色框内 = 分享时保留；灰色遮罩 = 分享时被裁。标题/logo 必须收进中央 42.6% 区域。
+- **衔接**：`publish_full.py` 设置封面后，用本脚本校验；若标题被切，重新生成封面（标题收进安全区）再存。
+
+## 可选功能：文风档案（2026-08-30 新增）
+
+「硅基研究员」共享文风，写作/改写/排版默认按此执行。完整规则见 `references/my-voice.md`。
+
+- **触发词**：「用我的风格」「按我的文风」「去掉 AI 味」「写得像人」。
+- **核心**：口语感（说白了/你会发现）、短句优先、避免排比堆砌、少用首先其次最后、具体大于抽象、保留人味松弛、不用「让我们」。
+- **去 AI 腔自检**：删「综上所述/值得注意的是/众所周知/毋庸置疑」；检查排比/长段/空话。
+- **衔接**：写作（B1/B2/B3 输入扩写）与标题生成均默认套用此风格；签名段与三连卡元素固定。
+
 ## 半角引号修复
 
 `validate_gzh_html.py` 会把正文里的半角 `"` `'` 报为 WARNING。用 `scripts/fix_quotes.py` 把文本节点里的英文引号成对替换为中文全角「」/‘’，幂等（已是全角再跑 = 0 替换），安全：
 
 ```bash
 PYTHONIOENCODING=utf-8 PYTHONUTF8=1 \
-  python scripts/fix_quotes.py "outputs/xxx_排版_红白色系(red-white).html"
+  python scripts/fix_quotes.py "outputs/xxx_排版_新丑撞色(neo-brutalism).html"
 ```
 
 ## 产物规范
@@ -204,15 +269,23 @@ gzh-publish/
 │   ├── component_lint.py       # 组件库源头检查
 │   ├── publish_full.py         # ⭐ 完整发布流水线（封面+名片+原创对话框，本机首选）
 │   ├── publish_draft.py        # Playwright 存稿（同步版，跨 Agent；受策略机可能跑不起来）
-│   └── publish_draft_async.py  # Playwright 存稿（异步版+greenlet 桩，仅正文+标题，旧版）
-│   └── fetch_ai_news.py        # 自助选题④：抓 AI 媒体首页抽候选文章
+│   ├── publish_draft_async.py  # Playwright 存稿（异步版+greenlet 桩，仅正文+标题，旧版）
+│   ├── fetch_ai_news.py        # 自助选题④：抓 AI 媒体首页抽候选文章
+│   ├── analyze_viral_article.py# 新增：公众号爆款文章 8 维度拆解（选题⑤）
+│   ├── generate_titles.py      # 新增：标题批量生成 + 评分 + 风险标注
+│   └── check_cover.py          # 新增：封面分享安全区校验（中央 42.6%）
 ├── references/
 │   ├── theme-index.md          # 主题索引（单一来源）
-│   ├── theme-moyu-green.md     # 摸鱼绿
-│   ├── theme-red-white.md       # 红白色系
+│   ├── theme-neo-brutalism.md  # 新丑撞色（默认推荐）
+│   ├── theme-swiss-minimal.md  # 瑞士极简
+│   ├── theme-bauhaus.md        # 包豪斯几何
+│   ├── theme-japanese-mag.md   # 日式杂志
 │   ├── common-components.md    # 通用增量库
 │   ├── format-normalize.md     # 输入归一化规则
-│   └── publish-sop.md          # 存稿+名片+三连卡操作细节
+│   ├── publish-sop.md          # 存稿+名片+三连卡操作细节
+│   ├── topic-research.md       # 新增：公众号爆款选题方法论
+│   ├── chart-guide.md          # 新增：图表配图规格（10 类图表）
+│   └── my-voice.md             # 新增：硅基研究员文风档案（去AI腔）
 ├── assets/
 │   └── preview-template.html   # 预览页外壳模板
 ├── outputs/                    # 运行时产物（预览/截图/日志，可删）

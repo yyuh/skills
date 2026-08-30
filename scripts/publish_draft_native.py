@@ -7,7 +7,7 @@
 
 依赖：系统 Python 3.14 + playwright（greenlet 桩绕过 WDAC 拦 DLL）。
 用法：
-  python publish_draft_native.py --theme moyu-green
+  python publish_draft_native.py --theme neo-brutalism
   python publish_draft_native.py --theme all --wait-scan 1800
 """
 import sys
@@ -49,7 +49,7 @@ SKILL_ROOT = Path(__file__).resolve().parent.parent
 OUT = SKILL_ROOT / "outputs"
 PROGRESS_FILE = str(OUT / "publish_native.log")
 
-THEME_IDS = ["moyu-green", "swiss-minimal", "bauhaus", "japanese-mag", "neo-brutalism"]
+THEME_IDS = ["neo-brutalism", "swiss-minimal", "bauhaus", "japanese-mag"]
 
 
 def log(msg):

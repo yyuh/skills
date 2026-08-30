@@ -8,7 +8,7 @@
 publish_draft_native 的实现，避免重复逻辑、降低出错面。
 
 用法：
-  python publish_draft_card_bottom.py --theme moyu-green
+  python publish_draft_card_bottom.py --theme neo-brutalism
   python publish_draft_card_bottom.py --theme all --wait-scan 1800
 """
 import sys

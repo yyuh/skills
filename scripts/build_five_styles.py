@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""同一篇文章渲染成 5 套主题（摸鱼绿/瑞士极简/包豪斯/日式杂志/新丑撞色）。
+"""同一篇文章渲染成 4 套主题（瑞士极简/包豪斯/日式杂志/新丑撞色）。
 
 产出：
   outputs/排版_{主题中文}({id}).html   —— 带样式代码块的正文（用于校验+预览+手动兜底）
@@ -186,57 +186,6 @@ def para_wrap(style, inner):
 # 主题配置
 # ---------------------------------------------------------------------------
 THEMES = {
-    "moyu-green": {
-        "cn": "摸鱼绿", "id": "moyu-green",
-        "container": 'max-width:677px;margin:0 auto;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,\'PingFang SC\',\'Hiragino Sans GB\',\'Microsoft YaHei\',sans-serif;color:#374151;line-height:1.75;letter-spacing:0.5px;overflow-x:hidden;',
-        "para": 'margin-bottom:16px;font-size:18px;line-height:1.9;text-align:justify;',
-        "accent": "#059669", "accent_soft_bg": "#ECFDF5", "accent_soft_border": "#A7F3D0",
-        "code_bar": "#059669",
-        "em": lambda t: f'<strong style="color:#059669;"><span leaf="">{t}</span></strong>',
-        "code_inline": lambda t: f'<span style="background:#F3F4F6;color:#1F2937;padding:2px 6px;border-radius:4px;font-size:16px;font-weight:600;"><span leaf="">{t}</span></span>',
-        "header": lambda: (
-            '<section style="margin:0 0 32px;background:#fff;border:1.5px solid rgba(5,150,105,0.15);border-radius:20px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.06);width:100%;">'
-            '<section style="padding:32px 28px 28px;">'
-            '<section style="display:flex;align-items:center;gap:8px;margin-bottom:28px;">'
-            '<span style="width:6px;height:6px;background:#059669;border-radius:50%;"><span leaf=""><br></span></span>'
-            f'<span style="font-size:14px;font-weight:700;letter-spacing:3px;color:#059669;"><span leaf="">{TOP}</span></span>'
-            '<section style="flex:1;height:1px;overflow:hidden;background:linear-gradient(to right,rgba(5,150,105,0.12),transparent);"><span leaf=""><br></span></section>'
-            f'<span style="font-size:13px;color:#D1D5DB;font-weight:600;"><span leaf="">{DATE}</span></span>'
-            '</section>'
-            '<section>'
-            '<p style="font-size:30px;font-weight:900;color:#111827;margin:0;line-height:1.05;letter-spacing:-2px;">'
-            '<span leaf="">本地大模型接进</span><span style="color:#059669;"><span leaf="">工作流</span></span></p>'
-            '<p style="font-size:30px;font-weight:900;color:#059669;margin:0 0 16px;line-height:1.05;letter-spacing:-2px;"><span leaf="">30 行 Python 当故障助手</span></p>'
-            '<section style="width:48px;height:3px;background:linear-gradient(to right,#059669,#34D399);border-radius:2px;margin-bottom:12px;"><span leaf=""><br></span></section>'
-            f'<p style="font-size:16px;color:#9CA3AF;margin:0;line-height:1.7;letter-spacing:0.5px;"><span leaf="">不上云、不花钱、离线也能跑，把本地千问变成你的维修台助手</span></p>'
-            '</section></section>'
-            '<section style="background:linear-gradient(135deg,#059669,#10B981);padding:12px 28px;display:flex;align-items:center;justify-content:space-between;">'
-            '<p style="font-size:15px;color:rgba(255,255,255,0.9);margin:0;font-weight:600;letter-spacing:0.5px;"><span leaf="">硅基研究员</span></p>'
-            '<section style="display:flex;gap:4px;">'
-            '<span style="background:rgba(255,255,255,0.2);padding:1px 6px;border-radius:3px;font-size:10px;color:#fff;font-weight:600;"><span leaf="">AI 实战</span></span>'
-            '<span style="background:rgba(255,255,255,0.2);padding:1px 6px;border-radius:3px;font-size:10px;color:#fff;font-weight:600;"><span leaf="">硬件向</span></span>'
-            '</section></section></section>'
-        ),
-        "chapter": lambda num, en, title: (
-            '<section style="margin-top:48px;margin-bottom:32px;padding:0 20px;">'
-            '<section style="display:flex;align-items:center;gap:16px;margin-bottom:24px;">'
-            '<section style="text-align:center;flex-shrink:0;">'
-            f'<p style="margin:0;font-size:35px;font-weight:900;color:#059669;line-height:1;letter-spacing:-2px;"><span leaf="">{num.replace("PART ","")}</span></p>'
-            '<p style="margin:0;font-size:10px;font-weight:700;color:#D1D5DB;letter-spacing:2px;"><span leaf="">PART</span></p>'
-            '</section>'
-            '<span style="width:1px;height:36px;background:#E5E7EB;flex-shrink:0;"><span leaf=""><br></span></span>'
-            '<section>'
-            f'<p style="margin:0 0 1px;font-size:21px;font-weight:900;color:#111827;letter-spacing:0.3px;"><span leaf="">{title}</span></p>'
-            f'<p style="margin:0;font-size:14px;font-weight:600;color:#9CA3AF;letter-spacing:1.5px;"><span leaf="">{en}</span></p>'
-            '</section></section></section>'
-        ),
-        "quote": lambda t: (
-            '<section style="background:#F9FAFB;border:1px dashed #D1D5DB;border-radius:8px;padding:12px 16px;margin-bottom:24px;text-align:justify;">'
-            f'<p style="font-size:16px;color:#374151;margin:0;line-height:1.6;"><span leaf="">{t}</span></p></section>'
-        ),
-        "end": lambda: "",
-        "cta": True,
-    },
     "swiss-minimal": {
         "cn": "瑞士极简", "id": "swiss-minimal",
         "container": 'max-width:677px;margin:0 auto;background:#FFFFFF;font-family:\'Helvetica Neue\',Helvetica,Arial,-apple-system,\'PingFang SC\',sans-serif;color:#1A1A1A;line-height:1.8;letter-spacing:0.5px;overflow-x:hidden;padding:40px 28px;',
