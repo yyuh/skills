@@ -1,5 +1,33 @@
 # 登录态缓存（per-机器 per-微信账号，首次 --headful 扫码生成，不随 skill 分发）
 .gzh-profile-dir/
 
-# 运行时产物
+# 运行时产物（预览/截图/日志，可删）
 outputs/
+
+# 本地工作记忆（含个人对话数据，绝不公开）
+.workbuddy/
+
+# 调试残留文件
+_v1.txt
+_ve1.txt
+*.bak*
+*.bak_before_*
+
+# 脚本：只保留 SKILL.md/references 正式引用的脚本，其余开发调试脚本一律忽略
+scripts/*.py
+!scripts/add_card_to_draft.py
+!scripts/add_cover_to_draft.py
+!scripts/analyze_viral_article.py
+!scripts/check_cover.py
+!scripts/component_lint.py
+!scripts/extract_docx.py
+!scripts/fetch_ai_news.py
+!scripts/fix_quotes.py
+!scripts/generate_titles.py
+!scripts/publish_draft.py
+!scripts/publish_draft_async.py
+!scripts/publish_full.py
+!scripts/validate_gzh_html.py
+!scripts/wrap_preview.py
+!scripts/stress_test.py
+scripts/batch*.ps1

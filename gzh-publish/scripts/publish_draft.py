@@ -52,14 +52,22 @@ def shot(page, name):
 
 
 def is_logged_in(page):
-    """DOM 文本判定：登录后有「草稿箱/图文素材/内容管理」，登录页有「扫码」。"""
+    """DOM 文本判定登录状态。
+    已登录强标志：主页有「新的创作」面板，或左侧有「首页」+「内容管理」菜单。
+    未登录强标志：登录页有「微信扫一扫」「使用账号登录」「扫码登录」，且无后台菜单。
+    注意：已登录页面也可能含「扫码」（如创作周报二维码），不能仅凭「扫码」判未登录。
+    """
     try:
         txt = page.inner_text("body", timeout=5000)
     except Exception:
         return False
-    has_qr = ("扫码" in txt) or ("扫描二维码" in txt)
-    has_console = ("草稿箱" in txt) or ("图文素材" in txt) or ("内容管理" in txt)
-    return has_console and not has_qr
+    # 已登录强标志
+    has_console = ("新的创作" in txt) or (
+        ("首页" in txt) and ("内容管理" in txt)
+    )
+    # 未登录强标志（登录页特有文案）
+    has_login_page = ("微信扫一扫" in txt) or ("使用账号登录" in txt) or ("扫码登录" in txt)
+    return has_console and not has_login_page
 
 
 def click_text(page, text, step_name, timeout=10000):
