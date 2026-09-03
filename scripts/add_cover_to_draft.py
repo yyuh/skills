@@ -57,9 +57,13 @@ async def is_logged_in(page):
         txt = await page.inner_text("body", timeout=5000)
     except Exception:
         return False
-    has_qr = ("扫码" in txt) or ("扫描二维码" in txt) or ("请使用微信" in txt)
-    has_console = ("草稿箱" in txt) or ("图文素材" in txt) or ("内容管理" in txt)
-    return has_console and not has_qr
+    # 已登录强标志：主页有「新的创作」面板，或左侧有「首页」+「内容管理」菜单
+    has_console = ("新的创作" in txt) or (
+        ("首页" in txt) and ("内容管理" in txt)
+    )
+    # 未登录强标志（登录页特有文案，已登录页的创作周报二维码不含这些词）
+    has_login_page = ("微信扫一扫" in txt) or ("使用账号登录" in txt) or ("扫码登录" in txt)
+    return has_console and not has_login_page
 
 async def close_original_dialog(page):
     has = await page.evaluate("""() => {

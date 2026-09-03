@@ -18,6 +18,14 @@ import base64
 import time
 import re
 import argparse
+try:
+    import win32clipboard
+    from PIL import Image
+    import io
+    HAS_CLIPBOARD = True
+except ImportError:
+    HAS_CLIPBOARD = False
+    print("WARN: win32clipboard或PIL未安装，剪贴板粘贴功能不可用")
 from pathlib import Path
 
 # ---- greenlet 桩（绕过 Windows WDAC/AppLocker DLL 拦截）----
@@ -157,140 +165,331 @@ async def fill_title(page, title):
     await page.wait_for_timeout(1000)
     return title
 
+
+def copy_image_to_clipboard(image_path):
+    """将图片复制到Windows剪贴板"""
+    if not HAS_CLIPBOARD:
+        return False
+    try:
+        image = Image.open(image_path)
+        output = io.BytesIO()
+        image.convert("RGB").save(output, "BMP")
+        data = output.getvalue()[14:]  # BMP文件头14字节
+        output.close()
+        win32clipboard.OpenClipboard()
+        win32clipboard.EmptyClipboard()
+        win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
+        win32clipboard.CloseClipboard()
+        return True
+    except Exception as e:
+        print(f"复制图片到剪贴板失败: {e}")
+        try:
+            win32clipboard.CloseClipboard()
+        except Exception:
+            pass
+        return False
+
 async def insert_cover_temp(page, cover_path):
-    """把封面图插入到正文末尾（临时，为了让图片库有这张图）"""
-    log("插入封面到正文末尾（临时）...")
-    # 先处理可能弹出的原创对话框
-    await close_original_dialog(page)
+    """把封面图粘贴到正文末尾（剪贴板CF_DIB方式，公众号编辑器支持粘贴上传）"""
+    log("粘贴封面到正文末尾（剪贴板方式）...")
     # 滚动到底部
     await page.evaluate("""() => { window.scrollTo(0, document.body.scrollHeight); }""")
-    await page.wait_for_timeout(2000)
-    # 聚焦正文末尾
-    await page.evaluate("""() => {
+    await page.wait_for_timeout(800)
+    # 点击正文中央偏下，确保聚焦
+    body_info = await page.evaluate("""() => {
       const pms = document.querySelectorAll('.ProseMirror');
       let target=null;
       for (const pm of pms){ if ((pm.getAttribute('data-placeholder')||'').indexOf('标题')<0){target=pm;break;} }
-      if (target) {
-        target.focus();
+      if (!target) return null;
+      const rect = target.getBoundingClientRect();
+      return {x: rect.x + rect.width/2, y: rect.y + Math.min(rect.height/2, 300)};
+    }""")
+    if body_info:
+        await page.mouse.click(body_info['x'], min(body_info['y'], 800))
+        await page.wait_for_timeout(1000)
+    # 聚焦+光标置末尾
+    await page.evaluate("""() => {
+      const pms = document.querySelectorAll('.ProseMirror');
+      for (const pm of pms) {
+        if ((pm.getAttribute('data-placeholder')||'').indexOf('标题')>=0) continue;
+        pm.focus();
         const range = document.createRange();
-        range.selectNodeContents(target);
+        range.selectNodeContents(pm);
         range.collapse(false);
         const sel = window.getSelection();
         sel.removeAllRanges();
         sel.addRange(range);
+        break;
       }
     }""")
-    await page.wait_for_timeout(1000)
-    # 上传图片
-    file_inputs = await page.query_selector_all('input[type="file"]')
-    for i, inp in enumerate(file_inputs):
-        try:
-            await inp.set_input_files(cover_path)
-            log(f"上传到输入框{i}成功")
-            break
-        except Exception as e:
-            log(f"输入框{i}失败:{e}")
-    await page.wait_for_timeout(10000)
-    log("封面已插入正文末尾")
+    await page.wait_for_timeout(600)
+    # 复制封面到剪贴板
+    ok = copy_image_to_clipboard(str(cover_path))
+    if not ok:
+        log("ERROR: 剪贴板复制封面失败")
+        return False
+    # Ctrl+V粘贴
+    await page.keyboard.press('Control+V')
+    # 轮询等待mmbiz图片上传成功（最多30秒）
+    for i in range(30):
+        await page.wait_for_timeout(1000)
+        r = await page.evaluate(r"""() => {
+          const pms = document.querySelectorAll('.ProseMirror');
+          for (const pm of pms) {
+            if ((pm.getAttribute('data-placeholder')||'').indexOf('标题')>=0) continue;
+            const imgs = pm.querySelectorAll('img');
+            for (const img of imgs) {
+              const s = img.src || img.getAttribute('data-src') || '';
+              if ((s.indexOf('mmbiz') >= 0 || s.indexOf('qpic') >= 0) && img.getBoundingClientRect().width > 50) return 'OK';
+            }
+          }
+          return 'WAIT';
+        }""")
+        if r == 'OK':
+            log(f"封面已粘贴到正文末尾 ({i+1}秒)")
+            return True
+    log("ERROR: 粘贴封面到正文失败（30秒内未见mmbiz图片）")
+    return False
 
-async def set_cover(page):
-    """设置封面：点击更换封面→从图片库选择→选第一张→下一步→确认"""
-    log("设置封面...")
-    # 先处理原创对话框
-    await close_original_dialog(page)
-    # 滚动到封面区域
+async def set_cover(page, cover_path=None, cover_url=None):
+    """设置封面：从正文选择刚粘贴的封面图（最可靠，封面必须已插入正文）"""
+    log("设置封面（从正文选择方式）...")
+    # 滚动封面区域到视口
     await page.evaluate("""() => {
       const el = document.getElementById('js_cover_area');
-      if (el) el.scrollIntoView({behavior: 'instant', block: 'center'});
+      if (el) el.scrollIntoView({behavior:'instant', block:'center'});
     }""")
     await page.wait_for_timeout(2000)
+    # hover封面区域右上角，触发菜单（含'从正文选择'）
+    log("hover封面区域右上角...")
+    await page.mouse.move(805, 418)
+    await page.wait_for_timeout(3000)
+    await shot(page, "cover_01_hover")
+    # 点击'从正文选择'
+    clicked = await page.evaluate(r"""() => {
+      const all = document.querySelectorAll('*');
+      for (const el of all) {
+        if (el.children.length === 0 && (el.innerText||'').trim() === '从正文选择') {
+          const r = el.getBoundingClientRect();
+          el.click();
+          return {x: Math.round(r.x), y: Math.round(r.y)};
+        }
+      }
+      return 'NOT_FOUND';
+    }""")
+    if clicked == 'NOT_FOUND':
+        log("ERROR: 未找到'从正文选择'选项（可能正文无图或hover位置不对）")
+        await shot(page, "cover_02_no_frombody")
+        return False
+    log(f"点击从正文选择: {clicked}")
+    await page.wait_for_timeout(4000)
+    await shot(page, "cover_02_frombody_dialog")
+    # 找弹窗中的封面缩略图（mmbiz背景图）
+    thumb = await page.evaluate(r"""() => {
+      const all = document.querySelectorAll('*');
+      for (const el of all) {
+        const bg = window.getComputedStyle(el).backgroundImage;
+        if (bg && bg.indexOf('mmbiz') >= 0) {
+          const r = el.getBoundingClientRect();
+          if (r.width > 60 && r.height > 60 && r.width < 300 && r.height < 300 && el.offsetParent && r.y > 200 && r.y < 700) {
+            return {x: Math.round(r.x + r.width/2), y: Math.round(r.y + r.height/2), w: Math.round(r.width), h: Math.round(r.height)};
+          }
+        }
+      }
+      return null;
+    }""")
+    if not thumb:
+        log("ERROR: 弹窗中未找到封面缩略图")
+        await shot(page, "cover_03_no_thumb")
+        return False
+    log(f"点击弹窗封面缩略图: {thumb}")
+    await page.mouse.click(thumb['x'], thumb['y'])
+    await page.wait_for_timeout(1500)
+    # 点'下一步'
+    for _a in range(10):
+        r = await page.evaluate(r"""() => {
+          const btns = Array.from(document.querySelectorAll('button'));
+          for (const b of btns) {
+            const t = (b.innerText||'').trim();
+            if (t === '下一步' && b.offsetParent) {
+              const rect = b.getBoundingClientRect();
+              b.click();
+              return {x: Math.round(rect.x), y: Math.round(rect.y)};
+            }
+          }
+          return 'NOT_FOUND';
+        }""")
+        if r != 'NOT_FOUND':
+            log(f"点击下一步: {r}")
+            break
+        await asyncio.sleep(1)
+    await page.wait_for_timeout(2500)
+    await shot(page, "cover_04_after_next")
+    # 点'确认'（裁剪界面）
+    for _a in range(15):
+        r = await page.evaluate(r"""() => {
+          const btns = Array.from(document.querySelectorAll('button'));
+          for (const b of btns) {
+            const t = (b.innerText||'').trim();
+            if ((t === '确认' || t === '确定' || t === '完成') && b.offsetParent) {
+              const rect = b.getBoundingClientRect();
+              if (rect.width > 40 && rect.height > 20) {
+                b.click();
+                return {x: Math.round(rect.x), y: Math.round(rect.y)};
+              }
+            }
+          }
+          return 'NOT_FOUND';
+        }""")
+        if r != 'NOT_FOUND':
+            log(f"点击确认: {r}")
+            break
+        await asyncio.sleep(1)
+    await page.wait_for_timeout(3000)
+    # 验证封面区域有真实mmbiz图片（最多30秒）
+    cover_verified = False
+    for _v in range(15):
+        await page.wait_for_timeout(2000)
+        cov = await page.evaluate(r"""() => {
+          const area = document.getElementById('js_cover_area');
+          if (!area) return 'NO_AREA';
+          const check = [];
+          const imgs = area.querySelectorAll('img');
+          for (const img of imgs) {
+            const r = img.getBoundingClientRect();
+            if (r.width > 50 && r.height > 20) check.push(img.src||'');
+          }
+          const bgEls = area.querySelectorAll('*');
+          for (const el of bgEls) {
+            const bg = window.getComputedStyle(el).backgroundImage;
+            if (bg && bg !== 'none') {
+              const m = bg.match(/url\(["']?([^"')]+)["']?\)/);
+              if (m) check.push(m[1]);
+            }
+          }
+          for (const s of check) {
+            if (s.indexOf('mmbiz') >= 0) return {ok:true, src:s.substring(0,120)};
+          }
+          return {ok:false, state: check.length ? check[0].substring(0,60) : 'no_img'};
+        }""")
+        if isinstance(cov, dict) and cov.get('ok'):
+            log(f"封面已验证生效: {cov['src']}")
+            cover_verified = True
+            break
+        log(f"封面等待[{_v+1}]: {cov}")
+    if not cover_verified:
+        log("WARN: 封面设置后未检测到真实图片URL")
+        await shot(page, "cover_05_verify_fail")
+        return False
+    log("封面设置流程结束")
+    return True
 
-    # 步骤1：点击封面区域触发菜单
-    log("点击封面区域...")
+async def _set_cover_upload_fallback(page, cover_path):
+    """旧版：上传封面文件到图片库，按时间戳识别新图并设置封面（备用）"""
+    log("fallback: 上传文件到图片库方式...")
+    import datetime as _dt
+    from pathlib import Path as _P
+    # 点击封面区域触发菜单
+    await page.evaluate("""() => { const el = document.getElementById('js_cover_area'); if (el) el.scrollIntoView({behavior:'instant', block:'center'}); }""")
+    await page.wait_for_timeout(2000)
     cover_clicked = await page.evaluate("""() => {
       const area = document.getElementById('js_cover_area');
-      if (area) {
-        const rect = area.getBoundingClientRect();
-        return {x: rect.x + rect.width/2, y: rect.y + rect.height/2, w: rect.width, h: rect.height};
-      }
+      if (area) { const r = area.getBoundingClientRect(); return {x: r.x + r.width/2, y: r.y + r.height/2}; }
       return null;
     }""")
     if cover_clicked:
         await page.mouse.click(cover_clicked['x'], cover_clicked['y'])
-        log(f"点击封面区域坐标: ({cover_clicked['x']}, {cover_clicked['y']})")
-    else:
-        log("未找到封面区域")
-    await page.wait_for_timeout(2000)
-    await shot(page, "cover_01_after_click")
-    await close_original_dialog(page)
-
-    # 步骤2：找"从图片库选择"并点击
-    log("点击从图片库选择...")
-    lib_clicked = await page.evaluate("""() => {
+    await page.wait_for_timeout(2500)
+    # 点"从图片库选择"
+    await page.evaluate(r"""() => {
       const all = document.querySelectorAll('*');
       for (const el of all) {
-        if (el.children.length === 0 && (el.innerText || '').trim() === '从图片库选择') {
-          const rect = el.getBoundingClientRect();
-          if (rect.width > 0 && rect.height > 0) {
-            el.click();
-            return {text: 'CLICKED', x: rect.x, y: rect.y};
+        if (el.children.length === 0 && (el.innerText||'').trim() === '从图片库选择') { el.click(); return; }
+      }
+    }""")
+    await page.wait_for_timeout(3000)
+    # 点"上传文件"
+    await page.evaluate(r"""() => {
+      const all = document.querySelectorAll('*');
+      for (const el of all) {
+        if (el.children.length > 0) continue;
+        const text = (el.innerText||'').trim();
+        if ((text === '上传文件' || text === '上传') && el.offsetParent) { el.click(); return; }
+      }
+    }""")
+    await page.wait_for_timeout(2000)
+    # 上传
+    file_inputs = await page.query_selector_all('input[type="file"]')
+    for inp in file_inputs:
+        try:
+            await inp.set_input_files(str(cover_path))
+            log("fallback: 上传成功")
+            break
+        except Exception as e:
+            log(f"fallback: 上传失败 {e}")
+    # 轮询找新图
+    upload_t0 = _dt.datetime.now()
+    target_thumb = None
+    for _poll in range(30):
+        await page.wait_for_timeout(2000)
+        _items = await page.evaluate(r"""() => {
+          const result = [];
+          const all = document.querySelectorAll('*');
+          for (const el of all) {
+            if (el.children.length > 0) continue;
+            const text = (el.innerText || '').trim();
+            if (!text) continue;
+            const rect = el.getBoundingClientRect();
+            if (rect.width < 30 || rect.height < 10 || !el.offsetParent) continue;
+            if (rect.y < 200 || rect.y > 800) continue;
+            const m = text.match(/粘贴图片_(\d{14})\.(png|jpg|jpeg)/);
+            if (m) result.push({ts: m[1], x: Math.round(rect.x), y: Math.round(rect.y)});
           }
-        }
-      }
-      return 'NOT_FOUND';
-    }""")
-    log(f"从图片库选择: {lib_clicked}")
-    await page.wait_for_timeout(3000)
-    await shot(page, "cover_02_after_lib_click")
-
-    # 步骤3：选中第一行第一张图片（用坐标点击）
-    log("选中第一张图片...")
-    await page.mouse.click(485, 285)
+          return result;
+        }""")
+        if _items:
+            _latest = max(_items, key=lambda x: x['ts'])
+            _tsdt = _dt.datetime.strptime(_latest['ts'], '%Y%m%d%H%M%S')
+            _age = (_tsdt - upload_t0).total_seconds()
+            if _age > -8:
+                target_thumb = _latest
+                break
+    if not target_thumb:
+        return False
+    await page.mouse.click(target_thumb['x'], target_thumb['y'])
     await page.wait_for_timeout(1500)
-    await shot(page, "cover_03_after_select")
-
-    # 步骤4：点击"下一步"（先找按钮，找不到就用坐标）
-    log("点击下一步...")
-    next_r = await page.evaluate("""() => {
-      const btns = Array.from(document.querySelectorAll('button'));
-      for (const b of btns) {
-        const t = (b.innerText || '').trim();
-        if (t === '下一步' && b.offsetParent) {
-          const rect = b.getBoundingClientRect();
-          b.click();
-          return {text: 'CLICKED', x: rect.x, y: rect.y};
-        }
-      }
-      return 'NOT_FOUND';
-    }""")
-    log(f"下一步: {next_r}")
-    if next_r == 'NOT_FOUND':
-        # 备用：用坐标点击右下角的下一步
-        log("备用：用坐标点击下一步(900, 680)")
-        await page.mouse.click(900, 680)
-    await page.wait_for_timeout(4000)
-    await shot(page, "cover_04_after_next")
-
-    # 步骤5：点击"确定"完成封面设置
-    log("点击确定...")
-    confirm_r = await page.evaluate("""() => {
-      const btns = Array.from(document.querySelectorAll('button'));
-      for (const b of btns) {
-        const t = (b.innerText || '').trim();
-        if ((t === '确定' || t === '确认' || t === '完成') && b.offsetParent) {
-          const rect = b.getBoundingClientRect();
-          if (rect.y > 100) { b.click(); return {text: 'CLICKED:' + t, x: rect.x, y: rect.y}; }
-        }
-      }
-      return 'NOT_FOUND';
-    }""")
-    log(f"确定: {confirm_r}")
-    if confirm_r == 'NOT_FOUND':
-        log("备用：用坐标点击确定(900, 680)")
-        await page.mouse.click(900, 680)
+    # 下一步/确定
+    for _a in range(10):
+        r = await page.evaluate(r"""() => {
+          const btns = Array.from(document.querySelectorAll('button'));
+          for (const b of btns) {
+            const t = (b.innerText||'').trim();
+            if ((t === '下一步' || t === '确定') && b.offsetParent) { b.click(); return 'CLICKED'; }
+          }
+          return 'NOT_FOUND';
+        }""")
+        if r != 'NOT_FOUND':
+            break
+        await asyncio.sleep(1)
+    await page.wait_for_timeout(2500)
+    # 确认
+    for _a in range(15):
+        r = await page.evaluate(r"""() => {
+          const btns = Array.from(document.querySelectorAll('button'));
+          for (const b of btns) {
+            const t = (b.innerText||'').trim();
+            if ((t === '确认' || t === '确定' || t === '完成') && b.offsetParent) {
+              const rect = b.getBoundingClientRect();
+              if (rect.width > 40 && rect.height > 20) { b.click(); return 'CLICKED'; }
+            }
+          }
+          return 'NOT_FOUND';
+        }""")
+        if r != 'NOT_FOUND':
+            break
+        await asyncio.sleep(1)
     await page.wait_for_timeout(3000)
-    await shot(page, "cover_05_after_confirm")
-    log("封面设置完成")
+    return True
 
 async def remove_temp_cover(page):
     """删除正文末尾临时插入的封面图（保留名片图片），循环删到没有非名片图片为止"""
@@ -507,6 +706,7 @@ async def main():
     ap.add_argument("--card-name", default="硅基研究员", help="公众号名片名称")
     ap.add_argument("--no-card", action="store_true", help="不插入名片")
     ap.add_argument("--headless", action="store_true")
+    ap.add_argument("--channel", default="msedge", help="浏览器 channel（默认 msedge 复用系统 Edge；本机 chromium 二进制已被清，勿用默认 chromium）")
     ap.add_argument("--profile-dir", default=".gzh-profile-dir")
     ap.add_argument("--wait-scan", type=int, default=600, help="等待扫码秒数")
     args = ap.parse_args()
@@ -533,12 +733,15 @@ async def main():
         sys.exit(1)
 
     async with async_playwright() as p:
-        ctx = await p.chromium.launch_persistent_context(
+        launch_kwargs = dict(
             user_data_dir=str(profile_dir),
             headless=args.headless,
             args=["--disable-blink-features=AutomationControlled"],
             viewport={"width": 1440, "height": 900},
         )
+        if getattr(args, "channel", "msedge"):
+            launch_kwargs["channel"] = args.channel
+        ctx = await p.chromium.launch_persistent_context(**launch_kwargs)
         page = ctx.pages[0] if ctx.pages else await ctx.new_page()
 
         await page.goto("https://mp.weixin.qq.com", wait_until="networkidle", timeout=60000)
@@ -592,11 +795,37 @@ async def main():
 
         # 设置封面（如果提供了封面图）
         if args.cover:
-            await insert_cover_temp(page, args.cover)
-            await shot(page, "02_cover_inserted")
-            await set_cover(page)
-            await shot(page, "03_cover_set")
-            await remove_temp_cover(page)
+            # 方案：先把封面粘贴到正文末尾，再从正文选择设置封面（最可靠）
+            # 正文无其他图片时，'从正文选择'弹窗唯一的图就是封面
+            pasted = await insert_cover_temp(page, args.cover)
+            cover_set_ok = False
+            if pasted:
+                for _cattempt in range(3):
+                    ok = await set_cover(page, args.cover)
+                    await shot(page, "03_cover_set")
+                    if ok:
+                        cover_set_ok = True
+                        break
+                    log(f"封面设置失败，自动重试 {_cattempt+1}/3 ...")
+                    await close_original_dialog(page)
+                    await page.wait_for_timeout(1500)
+            else:
+                log("WARN: 封面未粘贴到正文，尝试图片库上传方式")
+                from pathlib import Path as _P
+                # fallback：旧的上传文件到图片库方式
+                try:
+                    for _cattempt in range(2):
+                        ok = await _set_cover_upload_fallback(page, args.cover)
+                        if ok:
+                            cover_set_ok = True
+                            break
+                except Exception as _e:
+                    log(f"fallback失败: {_e}")
+            if not cover_set_ok:
+                log("WARN: 封面设置未成功，将不带封面保存（请在后台手动补封面）")
+            # 无论成功与否，删除正文末尾的临时封面图
+            if pasted:
+                await remove_temp_cover(page)
 
         # 插入名片
         if not args.no_card:
@@ -628,8 +857,68 @@ async def main():
         await page.wait_for_timeout(5000)
         await ctx.close()
 
+    # ===== 封面验证：回草稿箱列表检查卡片是否有封面背景图 =====
+    # （2026-08-30 复盘：封面是否生效，唯一可靠判据是草稿箱卡片有封面缩略图；
+    #   编辑器 DOM id 已过时，不能用 js_cover_area 判断）
+    cover_ok = None  # None=本次未设封面；True/False=封面验证结果
+    if args.cover:
+        cover_ok = False
+        try:
+            m = re.search(r"appmsgid=(\d+)", url or "")
+            m2 = re.search(r"token=(\d+)", url or "")
+            if m and m2:
+                appmsgid = m.group(1); token = m2.group(1)
+                log("验证封面：回草稿箱列表检查...")
+                async with async_playwright() as p:
+                    vctx = await p.chromium.launch_persistent_context(
+                        user_data_dir=str(profile_dir),
+                        headless=args.headless,
+                        args=["--disable-blink-features=AutomationControlled"],
+                        viewport={"width": 1440, "height": 900},
+                        channel=getattr(args, "channel", "msedge"),
+                    )
+                    vpage = vctx.pages[0] if vctx.pages else await vctx.new_page()
+                    list_url = (f"https://mp.weixin.qq.com/cgi-bin/appmsg?begin=0&count=10"
+                                f"&type=77&action=list_card&token={token}&lang=zh_CN")
+                    await vpage.goto("https://mp.weixin.qq.com", wait_until="domcontentloaded", timeout=60000)
+                    await vpage.wait_for_timeout(2000)
+                    await vpage.goto(list_url, wait_until="domcontentloaded", timeout=60000)
+                    await vpage.wait_for_timeout(4000)
+                    # 检查草稿卡片：标题命中 + 卡片内有 img 或背景图
+                    # 用文章标题前 8 个字做匹配（通用化，不写死标题）
+                    title_key = (args.title or "")[:8]
+                    cov = await vpage.evaluate("""(tk) => {
+                      const all = document.querySelectorAll('*');
+                      for (const el of all) {
+                        const t = (el.innerText || '').replace(/\\s+/g,' ');
+                        if (tk && t.indexOf(tk) >= 0) {
+                          const imgs = el.querySelectorAll('img');
+                          const hasBg = getComputedStyle(el).backgroundImage !== 'none';
+                          if (imgs.length > 0 || hasBg) return 'COVER_OK';
+                        }
+                      }
+                      return 'COVER_MISSING';
+                    }""", title_key)
+                    # 找不到含标题卡片时再宽松判断
+                    if cov == 'COVER_MISSING':
+                        cov2 = await vpage.evaluate("""() => {
+                          const imgs = document.querySelectorAll('.weui-desktop-card img, [class*="cover"] img');
+                          return imgs.length > 0 ? 'COVER_OK' : 'COVER_MISSING';
+                        }""")
+                        if cov2 == 'COVER_OK':
+                            cov = 'COVER_OK'
+                    log(f"封面验证: {cov}")
+                    cover_ok = (cov == 'COVER_OK')
+                    await vpage.screenshot(path=str(SKILL_ROOT / "outputs" / "cover_verify.png"))
+                    await vctx.close()
+        except Exception as e:
+            log(f"封面验证异常: {e}")
+
     if url and "appmsgid=" in url:
-        log("DONE: 已存入草稿箱")
+        if args.cover and cover_ok is False:
+            log("WARN: 文章已存稿，但封面验证未通过，请到后台确认封面")
+        else:
+            log("DONE: 已存入草稿箱" + ("" if cover_ok is None else "（封面已验证）"))
         sys.exit(0)
     log("WARN: 请人工检查草稿箱")
     sys.exit(0)

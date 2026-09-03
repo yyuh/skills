@@ -30,20 +30,25 @@ playwright install chromium
 
 - **Windows 中文环境**：Python 脚本 stdout 遇 emoji 会 GBK 崩溃，跑校验/预览/存稿时务必设 `PYTHONIOENCODING=utf-8`、`PYTHONUTF8=1`。
 - **登录态**：存稿脚本用 `launch_persistent_context(user_data_dir=skill根/.gzh-profile-dir)` 复用登录态。首次运行（或 cookie 过期）加 `--headful` 参数，会弹出浏览器让你手机微信扫码，登录后 cookie 持久化进 `.gzh-profile-dir`，之后不带 `--headful` 也能复用。`.gzh-profile-dir` 是 per-机器 per-微信账号的，**换机器需重新扫码**（属正常）。
-- **封面图**：`publish_full.py` 支持 `--cover` 参数自动设置封面（2.35:1 宽屏比例）。原理：先把封面插入正文末尾让图片库有图 → 点封面右上角「更换封面」→「从图片库选择」选第一张 → 下一步 → 确认 → 删除正文临时图。详见 `references/publish-sop.md` 封面设置专节。
+- **封面图**：`publish_full.py` 支持 `--cover` 参数自动设置封面（2.35:1 宽屏比例）。原理（2026-09-02 最终方案）：先把封面剪贴板粘贴到正文末尾（3秒转mmbiz）→ hover封面右上角弹出菜单 → 点「从正文选择」→ 选弹窗里的封面图（正文无其他图时唯一一张就是封面）→ 下一步 → 确认 → 删除正文临时图。封面与文章100%匹配。详见 `references/publish-sop.md` 封面设置专节。
 - **⚠️ Windows 应用控制策略坑（本机/企业机常见）**：部分机器启用了 WDAC/AppLocker，**会在 Playwright 加载底层 DLL 时拦截**（`greenlet`、`_socket` 报「应用程序控制策略已阻止此文件」），导致同步版 `publish_draft.py` 整个跑不起来。解法与完整踩坑链路见文末「环境坑：Windows 应用控制策略拦截 Playwright DLL」专节。**这类机器直接用异步版 `publish_draft_async.py` 即可**——它在 import 前给 `greenlet` 打纯 Python 桩，绕开被拦的 DLL，异步 API 本就不需要 greenlet。
 
-## 六个固定决策
+## 八个固定决策
 
-1. **排版主题（默认新丑撞色）**：用户没指定时**默认用新丑撞色 `neo-brutalism`**（用户偏好，2026-08-28 确认，已删除摸鱼绿/红白）。题材映射仅用于用户明确「自动排」时：
-   - 教程/干货/清单/工具盘点/测评/内刊手记/系统说明/宣言/观点/潮流话题 → 新丑撞色 neo-brutalism（默认）
-   - 观点/深度分析/设计评论/随笔禅意 → 瑞士极简 swiss-minimal
-   - 主题索引单一来源：`references/theme-index.md`
-2. **存草稿箱**：默认执行，不打断用户。登录失效 → 提示用户用 `--headful` 扫码（本 skill 输出提示，由宿主 Agent 通道发送）。
+1. **排版主题（5种风格，按内容自动匹配，2026-09-02 更新：技术类不用瑞士极简和日式）**：用户没指定时按 `references/theme-index.md` 的「风格自动匹配规则」选。已删除摸鱼绿，当前5种：
+   - AI工具/GitHub项目/AI新闻/技术分析/热点评论（技术类） → 新丑撞色 / 包豪斯几何 / 红白色系（三种轮换，禁用瑞士极简和日式）
+   - 理财金融/副业/赚钱/路径/方法论/实操指南 → 红白色系 / 瑞士极简（轮换）
+   - 修心/慢生活/个人感悟/随笔禅意 → 日式杂志 japanese-mag
+   - 深度观点/设计评论/非技术的思考类 → 瑞士极简 swiss-minimal
+   - 内容占比：AI类80%（= GitHub项目 + AI新闻热点混合，约各一半）/ 理财金融15% / 修心5%（2026-09-01确认）
+   - 主题索引单一来源：`references/theme-index.md`（含完整匹配表+目标读者画像）
+2. **存草稿箱（铁律：必须走完整流水线）**：默认执行，不打断用户。**必须用 `publish_full.py 正文.html --title "标题" --cover "封面图路径"`**，一键完成封面设置+名片置底+原创对话框处理。**禁止用旧版 `publish_draft.py`/`publish_draft_async.py`（只存正文，不含封面和名片）**。存稿前必须先生成封面图（2.35:1，按文章风格匹配，**生成后必须 OCR 检查无任何文字/数字/色号，检出即重生成**，见「封面生成与 OCR 检查」）。登录失效 → 提示用户用 `--headful` 扫码（本 skill 输出提示，由宿主 Agent 通道发送）。
 3. **作者名**：`{{作者名}}` 占位（默认「硅基研究员」），简介一句。
 4. **标题**：由 Agent 起/优化。主标题疑问句含关键词+数字 ≤22 字无特殊符号；副标题给具体价值；正文每段 ≤ 手机 5 行。
 5. **公众号名片位置**：所有文章**正文最末尾**插入公众号账号名片（用户偏好，2026-08-27 确认置底）。由 `publish_full.py` 在存稿流程中自动插入并用 `appendChild` 保证在最后一个元素。操作路径见 `references/publish-sop.md` 第 4 节。
 6. **三连卡规范**：点赞=大拇指 / 推荐=爱心 / 转发=弯箭头，图标上文字下（SVG）。旧「在看/星标」字样一律替换为「推荐/转发」。模板见 `references/theme-*.md` footer-cta 组件。
+7. **内容密度标准（铁律，2026-09-01确认）**：每个核心观点必须有真实案例支撑（具体到人/事/数字）；关键判断必须有数据；实操类必须给步骤；必须有反例/避坑；篇幅下限：纯观点≥1500字 / 实操≥2000字 / 深度≥2500字。完整规则见 `references/my-voice.md`「内容密度标准」。
+8. **代码与链接规范（铁律，2026-09-01确认）**：抓取项目必附仓库地址（公众号原生代码块）；网址和命令行必用原生代码块插入（灰色背景+行号），不用普通文本或超链接。纯观点文不要硬塞代码。完整规则见 `references/my-voice.md`「代码与链接规范」。
 
 ## 执行流程（7 步）
 
@@ -53,7 +58,7 @@ playwright install chromium
 4. **校验（强制）** → `scripts/validate_gzh_html.py <生成的.html>`，ERROR 清零 + 半角标点 WARNING 清零才算完成。半角引号用 `scripts/fix_quotes.py <生成的.html>` 一键转全角后再复验。
 5. **生成预览** → `scripts/wrap_preview.py <干净正文.html>`，产出带「复制到公众号」按钮的 `_预览.html`。
 6. **起标题 + 签名** → 按决策 4 起标题；`{{作者名}}`→实际作者名；文末放签名段 + 三连卡。
-7. **存草稿箱** → `scripts/publish_full.py <正文.html> --title "标题" --cover "封面图路径"`（完整流水线版，含原创对话框处理+封面自动设置+名片置底，本机首选）。旧版 `publish_draft_async.py` 仅注入正文+标题+保存，不含封面和名片。
+7. **存草稿箱** → 先生成封面图（2.35:1，按文章风格匹配，无文字）→ `scripts/publish_full.py <正文.html> --title "标题" --cover "封面图路径"`（完整流水线版，含原创对话框处理+封面自动设置+名片置底，本机首选）。**禁止跳过封面生成直接存稿**。旧版 `publish_draft_async.py` 仅注入正文+标题+保存，不含封面和名片，**已不推荐使用**。
 
 ## 可选功能：爬取 GitHub 热榜（选题 / 素材源）
 
@@ -172,23 +177,49 @@ PYTHONIOENCODING=utf-8 PYTHONUTF8=1 \
 - 文件名：`{原文件名}_排版_{主题中文名}({英文标识}).html`；预览页 `{...}_预览.html`。
 - 样式全部内联；所有文字节点用 `<span leaf="">文字</span>` 包裹；禁 `<style>/<script>/<div>/class/id/position:fixed/absolute/float/@media/@keyframes/grid/CSS变量/外部字体`。
 
+## 批量生产规范（每日定时 10 篇 / 手动 5 篇，2026-09-03 固化）
+
+用户说「再来 N 篇」「生成 X 篇存草稿箱」「每天自动生成 10 篇」时，按以下批量流水线执行（**不要问、不要用户选，直接走流程**）：
+
+1. **按权重选题**：AI/GitHub/技术 80%（≈ GitHub 热榜项目 + 当天 AI 新闻各一半）、理财 15%、修心 5%。每篇过「选题过滤三问」。
+2. **避让清单防重复**：开工前先读历史已写素材（SKILL.md / outputs 内 `batch*` 产物、避让清单），**同批内不重复主题、跨批不炒冷饭**。素材命中已写过的 → 直接换下一个，不硬写。
+3. **风格轮换**：技术类只用新丑撞色/包豪斯/红白三色轮换（禁瑞士极简和日式），同批内尽量不连续同风格；理财用红白/瑞士，修心用日式。
+4. **正文全部校验后再统一出封面**：每篇 HTML 写完立即 `validate_gzh_html.py` + `fix_quotes.py` 复验至 0 ERROR 0 WARNING，5/10 篇正文全部合规后，再统一生成封面（避免写到一半发现风格/格式问题返工）。
+5. **封面批量生成**：每篇 `image_gen` 出 2.35:1 无文字图 → OCR 检查 → 带字重生成 → `curl.exe -L -s -o outputs\xxx_cover.png` 下载落盘。
+6. **串行存稿（铁律）**：所有存稿**一次只跑一个** `publish_full.py`（共用 `.gzh-profile-dir` 登录态，并行会抢 SingletonLock 崩溃）。每篇存稿前 `taskkill /F /IM msedge.exe` 清场；后台任务 TaskOutput 长时间无输出时用 `Get-Process` 确认 python/msedge 存活再继续等。
+7. **逐篇验证 COVER_OK**：每篇跑完回草稿箱列表验证封面（`封面验证: COVER_OK` 才算成功），记录 appmsgid。
+8. **汇总交付**：全部存完后，向用户列出每篇「标题 / 方向 / 风格 / appmsgid」，便于审核。
+
+> 单篇约 4–5 分钟，5 篇约 25 分钟、10 篇约 50 分钟。期间宿主 Agent 应持续等待存稿任务（TaskOutput block 长 timeout），不要中途打断或并行开新存稿。
+
 ## 存稿自动化（跨 Agent）
 
 ```bash
-# 首选：完整流水线版（含封面设置+名片置底+原创对话框处理）
+# ⭐ 唯一推荐：完整流水线版（含封面设置+名片置底+原创对话框处理）
+# 存稿前必须先生成封面图（2.35:1，按文章风格匹配）
 PYTHONIOENCODING=utf-8 PYTHONUTF8=1 \
   python scripts/publish_full.py 排版.html --title "文章标题" --cover "封面图.jpg"
 
-# 不设置封面、不插名片时
+# 给已有草稿补封面（草稿已存在但缺封面时用）
 PYTHONIOENCODING=utf-8 PYTHONUTF8=1 \
-  python scripts/publish_full.py 排版.html --title "文章标题" --no-card
+  python scripts/add_cover_to_draft.py --appmsgid <草稿ID> --cover "封面图.jpg"
 
-# 旧版：仅注入正文+标题+保存（不含封面和名片，已不推荐）
+# 给已有草稿补名片（草稿已存在但缺公众号名片时用）
+PYTHONIOENCODING=utf-8 PYTHONUTF8=1 \
+  python scripts/add_card_to_draft.py --appmsgid <草稿ID> --card-name "硅基研究员"
+
+# ⚠️ 旧版：仅注入正文+标题+保存（不含封面和名片，已不推荐，禁止用于正式存稿）
 PYTHONIOENCODING=utf-8 PYTHONUTF8=1 \
   python scripts/publish_draft_async.py 排版.html --title "文章标题"
 ```
 
-`publish_full.py` 自动完成：登录态探测 → 打开编辑器 → **关闭原创声明对话框**（选"无需声明"→确定）→ 注入正文 → 填标题 → **插入封面到正文末尾（临时）** → **设置封面**（更换封面→从图片库选择→选第一张→下一步→确认）→ **删除临时封面图** → **插入公众号名片并置底** → 保存草稿 → 验证 appmsgid。所有截图/日志写到 skill 根 `outputs/`。
+`publish_full.py` 自动完成：登录态探测 → 打开编辑器 → **关闭原创声明对话框**（选"无需声明"→确定）→ 注入正文 → 填标题 → **插入封面到正文末尾（临时，剪贴板粘贴）** → **设置封面**（hover 封面区域右上角→点「从正文选择」→选弹窗里的封面图→下一步→确认）→ **删除临时封面图** → **插入公众号名片并置底** → 保存草稿 → 验证 appmsgid。所有截图/日志写到 skill 根 `outputs/`。
+
+> **封面方案（2026-09-02 最终验证）**：用「**从正文选择**」而非「从图片库上传文件」。原理：先把封面图剪贴板粘贴进正文末尾（公众号编辑器支持粘贴上传，3 秒内转 mmbiz），此时正文无其他图片时，「从正文选择」弹窗里唯一的图就是刚粘贴的封面，点它就是封面——**封面与文章 100% 匹配，无图片库刷新时机的歧义**。设置后删掉正文末尾的临时封面图即可。
+
+> **封面生成与 OCR 检查（2026-09-03 固化，铁律）**：封面在存稿前生成，`image_gen` 出 2.35:1（1280×545）无文字图，按文章风格匹配。**生成后必须对返回图做 OCR 检查**（image_gen 返回值自带 OCR 表；或读图确认），检出任何文字/字母/数字/色号（如 `AI-B22424`、`FILE`、`AI`、`25¢`）必须重生成，直到干净为止——公众号封面上有文字会和正文标题打架，显得廉价。
+> **出图避坑（真实踩坑）**：模型爱在"芯片/处理器、硬币、文件图标、色块角标"上写字，红白芯片图爱带 `AI` 字样、瑞士极简爱带色号/编号、新丑文件图标爱带 `FILE`。重生成时**换构图**（去掉易出文字的要素：芯片不画内部字母、硬币不画面值、不要求"标注色号"），而不是同一提示词重跑。
+> **封面安全区**：生成后建议跑 `scripts/check_cover.py` 校验中央 42.6% 安全区（本 skill 封面一律无文字，通常直接通过）。
 
 > 同步版 `scripts/publish_draft.py` 仍保留作为通用参考，但**本机等被 WDAC/AppLocker 拦 `greenlet`/`_socket` DLL 的环境必须用异步版**（`publish_full.py` 和 `publish_draft_async.py` 都是异步版）。
 
@@ -234,13 +265,15 @@ PYTHONIOENCODING=utf-8 PYTHONUTF8=1 \
 - **不用虚线框做强调**：小标题用左竖条/药丸标签（通用库 3a-3e），虚线框仅限主题库明确风格组件与待补素材占位。
 - **占位图残留**：名片图等占位无真实 URL 时整行删掉。
 - **登录态过期**：`.gzh-profile-dir` 里的 cookie 一般 1–2 周过期，过期后存稿脚本退出码 2（NEED-LOGIN），加 `--headful` 重新扫码即可，不必改任何代码。
+- **登录态判断 bug（2026-08-31 修复）**：旧版 `is_logged_in()` 用页面含「扫码」判未登录，但已登录页的「创作周报」卡片也含「扫码」二字，导致误判为未登录、盲等扫码超时。修复：已登录强标志改为「新的创作」面板或「首页+内容管理」菜单；未登录强标志改为「微信扫一扫/使用账号登录/扫码登录」（登录页特有文案）。`publish_draft.py` 和 `add_cover_to_draft.py` 均已修复。
 - **本机存稿用异步版**：若 `publish_draft.py` 启动即报 `greenlet`/`_socket` 被「应用程序控制策略已阻止此文件」，是 Windows WDAC/AppLocker 拦了底层 DLL，**不是缺包、不是网络、也不是沙箱**——关沙箱隔离也白搭。直接改用 `publish_draft_async.py`（import 前打 greenlet 纯 Python 桩 + asyncio 异步 API，绕开被拦 DLL）。根因与解法见文末环境坑专节。
 - **存稿必须串行、勿并行**：所有 `publish_draft_async.py` 进程共用同一个 `--user-data-dir=.gzh-profile-dir` 登录态目录，同时起两个会互相抢 SingletonLock 导致一个 `TargetClosedError` 崩溃。多篇要存时，**一次只跑一个**，前一个完成（或确认退出）再跑下一个。
 - **CDP 备用通道（THUQX 思路）**：若连异步版都拉不起浏览器，或想完全绕过 Playwright，可改用 Edge/Chrome 的 `--remote-debugging-port=9222` + `websocket-client` 直连，定位 ProseMirror 后走 `ClipboardEvent('paste')` 注入富文本。关键认知：公众号编辑器含**多个 ProseMirror**（标题带 `data-placeholder` 含「标题」、正文不带），querySelector 取第一个会填错位置；React 受控输入须用 native value setter；富文本只能经 paste 事件进 ProseMirror。**但本机已验证不可行（见路径表④）：Chromium cookie 经 Windows DPAPI 加密，复制 profile 后解密失败，打开仍是登录页，勿再尝试。**
 - **后台任务追踪可能丢失**：`run_in_background` 的 TaskOutput 偶尔返回空，但 `msedge` 进程仍在跑、窗口二维码还在等扫。判真实状态以 `tasklist msedge` + `outputs/login_qr.png` 时间戳为准，不要只信 TaskOutput。
 - **原创声明对话框**：每次打开草稿/新建文章都会弹出原创声明对话框挡住所有操作，必须先选「无需声明」单选（坐标 710,270）→ 点「确定」（659,715），否则后续点击全部失效。`publish_full.py` 已自动处理。
-- **封面设置必须先插正文**：直接用文件输入框上传到封面区域会失败，点击封面区域中心只会选中图片不会弹菜单。正确流程：①把封面作为图片插入正文末尾 → ②点封面右上角「更换封面」按钮（class 含 `js_chooseCover`，坐标 798,416）→ ③点「从图片库选择」（853,521）→ ④选第一行第一张（刚上传的，485,285）→ ⑤点「下一步」→ ⑥点「确认」→ ⑦删除正文末尾临时插入的封面图。`publish_full.py --cover` 已自动完成全流程。
+- **封面设置用「从正文选择」（2026-09-02 最终方案，已验证 100% 匹配）**：直接把文件上传到封面区域会失败；点封面中心只会选中不弹菜单。正确流程：① 把封面图剪贴板粘贴到正文末尾（`copy_image_to_clipboard` + Ctrl+V，公众号编辑器支持粘贴上传，3 秒内转 mmbiz）→ ② hover 封面区域**右上角**（坐标 805,418）触发菜单（此时才出现「从正文选择」，hover 中心/左侧不出现）→ ③ 点「从正文选择」（点击含该文本的元素）→ ④ 弹窗「请从正文插入的图片和视频封面中选择封面」，点其中 mmbiz 背景图缩略图（`appmsg_content_img`，约 340,410）→ ⑤ 点「下一步」→ ⑥ 点「确认」→ ⑦ 轮询验证封面区域出现真实 mmbiz URL → ⑧ 删除正文末尾临时封面图。`publish_full.py --cover` 已自动完成全流程。**注意：「从正文选择」弹窗只列出 mmbiz 图（已上传的），外网图/未转存图不显示——本 skill 文章正文无配图，弹窗唯一的图就是封面，点它就是它。**
 - **封面比例 2.35:1**：用户明确要求公众号封面用 2.35:1 宽屏比例（如 1280×545），不要用方形。生成封面时指定 `width=1280, height=545`。
+- **封面必须 OCR 检查无字（2026-09-03 固化）**：封面图生成后（image_gen 返回自带 OCR 表，或读图确认）必须检查是否含任何文字/数字/色号；检出即重生成，直到干净。模型爱在芯片/硬币/文件图标/色块角标写字，重生成要换构图（去掉易出文字要素），不要同一提示词硬跑。
 - **标题必须用 keyboard.type**：用 JS `set value` 改标题会报 `Illegal invocation` 错误，必须先聚焦标题 ProseMirror 再用 `page.keyboard.type()` 输入。
 - **正文注入用 innerHTML**：旧版用 paste 事件注入，新版直接 `target.innerHTML = html` 更稳定，样式不会丢失。
 - **名片插入后需置底**：账号名片插入后可能在正文中间，必须用 `appendChild` 把名片元素移到正文最底部。
@@ -267,13 +300,16 @@ gzh-publish/
 │   ├── fix_quotes.py           # 半角引号→全角（WARNING 清零）
 │   ├── extract_docx.py         # docx → Markdown
 │   ├── component_lint.py       # 组件库源头检查
-│   ├── publish_full.py         # ⭐ 完整发布流水线（封面+名片+原创对话框，本机首选）
-│   ├── publish_draft.py        # Playwright 存稿（同步版，跨 Agent；受策略机可能跑不起来）
-│   ├── publish_draft_async.py  # Playwright 存稿（异步版+greenlet 桩，仅正文+标题，旧版）
+│   ├── publish_full.py         # ⭐ 完整发布流水线（封面+名片+原创对话框，本机首选，存稿唯一推荐）
+│   ├── publish_draft.py        # Playwright 存稿（同步版，跨 Agent；受策略机可能跑不起来，仅参考）
+│   ├── publish_draft_async.py  # Playwright 存稿（异步版+greenlet 桩，仅正文+标题，旧版已不推荐）
+│   ├── add_cover_to_draft.py   # 给已有草稿补封面（打开草稿→插临时图→设封面→删临时图→保存）
+│   ├── add_card_to_draft.py    # 给已有草稿补公众号名片并置底（2026-09-01新增）
 │   ├── fetch_ai_news.py        # 自助选题④：抓 AI 媒体首页抽候选文章
 │   ├── analyze_viral_article.py# 新增：公众号爆款文章 8 维度拆解（选题⑤）
 │   ├── generate_titles.py      # 新增：标题批量生成 + 评分 + 风险标注
-│   └── check_cover.py          # 新增：封面分享安全区校验（中央 42.6%）
+│   ├── check_cover.py          # 新增：封面分享安全区校验（中央 42.6%）
+│   └── stress_test.py          # 新增：流水线抗压测试（校验/引号/命名/密度 85 用例，改脚本后回归）
 ├── references/
 │   ├── theme-index.md          # 主题索引（单一来源）
 │   ├── theme-neo-brutalism.md  # 新丑撞色（默认推荐）

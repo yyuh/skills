@@ -13,6 +13,7 @@
 """
 
 import argparse
+import os
 import re
 import sys
 from html.parser import HTMLParser
@@ -21,6 +22,7 @@ from html.parser import HTMLParser
 FORBIDDEN = [
     (re.compile(r"<style[\s>]", re.I), "ERROR", "<style> 标签会被过滤，样式必须内联"),
     (re.compile(r"<script[\s>]", re.I), "ERROR", "<script> 标签会被过滤"),
+    (re.compile(r"<\s*scr[\s>]|scr\s*<!--", re.I), "ERROR", "script 拆分形式（含注释绕过）会被过滤"),
     (re.compile(r"</?div[\s>]", re.I), "ERROR", "<div> 会被改写，请用 <section>"),
     (re.compile(r"<link[\s>]", re.I), "ERROR", "外部 <link>（CSS/字体）会被过滤"),
     (re.compile(r"\sclass\s*=", re.I), "ERROR", "class 属性会被剥离，请用内联 style"),
@@ -37,6 +39,7 @@ FORBIDDEN = [
     (re.compile(r"var\s*\(\s*--", re.I), "ERROR", "CSS 变量 var(--x) 不被支持，请写死值"),
     (re.compile(r"url\s*\(\s*['\"]?https?://[^)]*\.(woff2?|ttf|otf|eot)", re.I),
      "ERROR", "外部字体不被支持"),
+    (re.compile(r"url\s*\(\s*['\"]?data:font[^)]*", re.I), "ERROR", "内联字体(data:font)不被支持，请用系统字体"),
 ]
 
 CJK = re.compile(r"[一-鿿㐀-䶿]")
@@ -143,6 +146,9 @@ def main():
         html = sys.stdin.read()
         name = "<stdin>"
     else:
+        if not os.path.isfile(args.file):
+            print(f"✗ 找不到文件: {args.file}")
+            sys.exit(1)
         with open(args.file, encoding="utf-8", errors="replace") as f:
             html = f.read()
         name = args.file
