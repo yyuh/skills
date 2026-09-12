@@ -288,6 +288,9 @@ async def set_cover(page, cover_path=None, cover_url=None):
     thumb = await page.evaluate(r"""() => {
       const all = document.querySelectorAll('*');
       for (const el of all) {
+        // 关键：草稿已有封面时，页面封面区域本身就是一张 mmbiz 图，
+        // 必须排除，否则会选中旧封面自己 —— 表现为"设置成功"但封面没换。
+        if (el.closest && el.closest('#js_cover_area')) continue;
         const bg = window.getComputedStyle(el).backgroundImage;
         if (bg && bg.indexOf('mmbiz') >= 0) {
           const r = el.getBoundingClientRect();
