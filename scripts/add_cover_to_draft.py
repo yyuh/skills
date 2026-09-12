@@ -144,7 +144,7 @@ async def set_cover(page):
       if (el) el.scrollIntoView({behavior: 'instant', block: 'center'});
     }""")
     await page.wait_for_timeout(2000)
-    log("点击封面区域...")
+    log("悬停封面区域（触发弹窗）...")
     cover_pos = await page.evaluate("""() => {
       const area = document.getElementById('js_cover_area');
       if (area) {
@@ -154,45 +154,105 @@ async def set_cover(page):
       return null;
     }""")
     if cover_pos:
-        await page.mouse.click(cover_pos['x'], cover_pos['y'])
-    await page.wait_for_timeout(2000)
-    await shot(page, "01_after_click")
+        await page.mouse.move(cover_pos['x'], cover_pos['y'])
+        await page.wait_for_timeout(1500)
+        await page.mouse.move(cover_pos['x'] + 10, cover_pos['y'] + 5)
+        await page.wait_for_timeout(2000)
+    await shot(page, "01_after_hover")
     await close_original_dialog(page)
-    log("点击从图片库选择...")
-    await page.evaluate("""() => {
-      const all = document.querySelectorAll('*');
-      for (const el of all) {
-        if (el.children.length === 0 && (el.innerText || '').trim() === '从图片库选择') {
-          const rect = el.getBoundingClientRect();
-          if (rect.width > 0 && rect.height > 0) { el.click(); return; }
+    log("点击从正文中选择（js_selectCoverFromContent）...")
+    clicked = await page.evaluate("""() => {
+      const btn = document.querySelector('.js_selectCoverFromContent');
+      if (btn) {
+        const rect = btn.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          btn.click();
+          return true;
         }
       }
+      return false;
     }""")
+    if not clicked:
+        log("js_selectCoverFromContent not visible, try clicking replace button...")
+        await page.evaluate("""() => {
+          const btn = document.querySelector('.js_chooseCover');
+          if (btn) btn.click();
+        }""")
+        await page.wait_for_timeout(2000)
+        clicked = await page.evaluate("""() => {
+          const btn = document.querySelector('.js_selectCoverFromContent');
+          if (btn) {
+            const rect = btn.getBoundingClientRect();
+            if (rect.width > 0) { btn.click(); return true; }
+          }
+          return false;
+        }""")
+    await page.wait_for_timeout(8000)
+    await shot(page, "02_after_select")
+    log("选中图片（新插入的封面）...")
+    # Find image position in dialog and click with mouse
+    img_pos = await page.evaluate("""() => {
+      // Find all visible images in the dialog/popover
+      const allImgs = document.querySelectorAll('img');
+      for (let i = allImgs.length - 1; i >= 0; i--) {
+        const img = allImgs[i];
+        const rect = img.getBoundingClientRect();
+        // Image should be visible, reasonable size, and in the dialog area (y > 300)
+        if (rect.width > 50 && rect.width < 300 && rect.height > 50 && rect.height < 300 && rect.y > 300 && rect.y < 800) {
+          return {x: rect.x + rect.width/2, y: rect.y + rect.height/2, w: rect.width, h: rect.height};
+        }
+      }
+      return null;
+    }""")
+    if img_pos:
+        log(f"  found image at ({img_pos['x']}, {img_pos['y']}), size {img_pos['w']}x{img_pos['h']}")
+        await page.mouse.click(img_pos['x'], img_pos['y'])
+        log("  double-clicked image")
+    else:
+        log("  no image found, trying default coordinate (330, 530)...")
+        await page.mouse.click(340, 410)
     await page.wait_for_timeout(3000)
-    await shot(page, "02_after_lib")
-    log("选中第一张图片...")
-    await page.mouse.click(485, 285)
-    await page.wait_for_timeout(1500)
-    log("点击下一步...")
-    await page.evaluate("""() => {
+    await shot(page, "02b_after_img_select")
+    log("点击下一步（坐标）...")
+    # Find next button position and click
+    next_pos = await page.evaluate("""() => {
       const btns = Array.from(document.querySelectorAll('button'));
       for (const b of btns) {
-        if ((b.innerText || '').trim() === '下一步' && b.offsetParent) { b.click(); return; }
+        if ((b.innerText || '').trim() === '下一步' && b.offsetParent) {
+          const rect = b.getBoundingClientRect();
+          return {x: rect.x + rect.width/2, y: rect.y + rect.height/2};
+        }
       }
+      return null;
     }""")
+    if next_pos:
+        await page.mouse.click(next_pos['x'], next_pos['y'])
+        log(f"  clicked next at ({next_pos['x']}, {next_pos['y']})")
+    else:
+        log("  next button not found, trying default coordinate...")
+        await page.mouse.click(660, 850)
     await page.wait_for_timeout(4000)
     await shot(page, "03_after_next")
-    log("点击确定...")
-    await page.evaluate("""() => {
+    log("点击确定（坐标）...")
+    confirm_pos = await page.evaluate("""() => {
       const btns = Array.from(document.querySelectorAll('button'));
       for (const b of btns) {
         const t = (b.innerText || '').trim();
-        if ((t === '确定' || t === '确认' || t === '完成') && b.offsetParent) {
+        if ((t === '完成' || t === '确定' || t === '确认') && b.offsetParent) {
           const rect = b.getBoundingClientRect();
-          if (rect.y > 100) { b.click(); return; }
+          if (rect.y > 100 && b.className.indexOf('disabled') < 0) {
+            return {x: rect.x + rect.width/2, y: rect.y + rect.height/2, text: t};
+          }
         }
       }
+      return null;
     }""")
+    if confirm_pos:
+        await page.mouse.click(confirm_pos['x'], confirm_pos['y'])
+        log(f"  clicked confirm ({confirm_pos.get('text','?')}) at ({confirm_pos['x']}, {confirm_pos['y']})")
+    else:
+        log("  confirm button not found, trying default coordinate...")
+        await page.mouse.click(720, 780)
     await page.wait_for_timeout(3000)
     await shot(page, "04_after_confirm")
     log("封面设置完成")
