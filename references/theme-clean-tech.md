@@ -30,7 +30,7 @@
 正文字号：     15px
 行高：         1.8
 段间距：       16px
-大编号字号：   36px
+大编号字号：   48px
 小标题字号：   17px
 最大宽度：     677px
 内容区边距：   0 16px
@@ -57,8 +57,8 @@
 > 文章开头用一句话概括核心，不加装饰符号，前后各空一行。
 
 ```html
-<p style="font-size:15px;color:#666666;line-height:2.1;margin:32px 16px 32px;">
-  <span leaf="">{{一句话导语：这个项目解决了什么问题 / 这条新闻为什么值得看}}</span>
+<p style="font-size:16px;color:#111111;font-weight:700;line-height:1.8;margin:0 16px 8px;">
+  <span leaf="">{{核心卖点，一行讲完，不加解释}}</span>
 </p>
 ```
 
@@ -71,7 +71,7 @@
 ```html
 <section style="margin:40px 16px 0;">
   <!-- 大编号 -->
-  <p style="font-size:36px;font-weight:800;color:#FF6B35;line-height:1;margin:0 0 8px;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif;">
+  <p style="font-size:48px;font-weight:900;color:#FF6B35;line-height:1;margin:0 0 8px;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif;">
     <span leaf="">01</span>
   </p>
 
@@ -116,14 +116,17 @@
 
 ---
 
-## 组件 5 代码块（公众号原生）
+## 组件 5 代码块（深色，真实终端风）
 
-> 项目地址和命令行用公众号原生代码块样式（灰底圆角）。
+> 项目地址和命令行用深色代码块（真实终端观感）。多行命令每行一个 `<p style="margin:0">`，行距靠 line-height 控制；长行自动换行不溢出。
 
 ```html
-<section style="background:#F5F5F5;border-radius:6px;padding:12px 16px;margin:12px 0;overflow-x:auto;">
-  <p style="font-size:13px;color:#333333;font-family:Menlo,Monaco,'Courier New',monospace;line-height:1.6;margin:0;word-break:break-all;">
-    <span leaf="">{{代码/URL/命令}}</span>
+<section style="background:#1E293B;border-radius:8px;padding:12px 16px;margin:12px 0;overflow-x:auto;">
+  <p style="font-size:13px;color:#E2E8F0;font-family:Menlo,Monaco,'Courier New',monospace;line-height:1.7;margin:0 0 6px;word-break:break-all;">
+    <span leaf="">{{代码/URL/命令 第1行}}</span>
+  </p>
+  <p style="font-size:13px;color:#E2E8F0;font-family:Menlo,Monaco,'Courier New',monospace;line-height:1.7;margin:0;word-break:break-all;">
+    <span leaf="">{{第2行}}</span>
   </p>
 </section>
 ```
@@ -170,12 +173,17 @@
 > 统一一句话引导，不加二维码大图，不加"求转发"话术。
 
 ```html
-<section style="margin:40px 16px 24px;text-align:center;">
-  <p style="font-size:14px;color:#999999;line-height:1.6;margin:0;">
-    <span leaf="">点击下方卡片，关注硅基研究员</span>
+<section style="margin:40px 16px 0;">
+  <p style="font-size:48px;font-weight:900;color:#FF6B35;line-height:1;margin:0 0 8px;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif;">
+    <span leaf="">04</span>
+  </p>
+  <p style="font-size:17px;font-weight:700;color:#111111;line-height:1.5;margin:0 0 12px;">
+    <span leaf="">点击下方卡片，关注硅基研究员，每天一个 AI 资讯</span>
   </p>
 </section>
 ```
+
+> 编号顺延：正文最后一节是 03，引导关注就用 04；正文到 02 就用 03。编号样式与正文模块完全一致。
 
 ---
 
@@ -184,9 +192,19 @@
 ```html
 <section style="margin:24px 16px 0;padding-top:20px;border-top:1px solid #EEEEEE;">
   <p style="font-size:13px;color:#999999;line-height:1.6;margin:0;text-align:right;">
-    <span leaf="">硅基研究员 · 专注AI工具与开源项目</span>
+    <span leaf="">点击下方卡片，关注硅基研究员，每天一个 AI 资讯</span>
   </p>
 </section>
+```
+
+---
+
+## 组件 10 引流卡（品牌引导卡图，每篇固定，正文末尾）
+
+> 正文最后一段之后、结尾引导（组件 8）之前，放一张固定的「硅基研究员」品牌引流卡图（黑底橙字，与封面同风格）。图固定用 `outputs/引流卡_硅基研究员.png`，作为 body-images 的**最后一张**（占位符编号最末）走剪贴板粘贴，不写死 img 路径。
+
+```html
+<p style="margin:32px 0;color:#999999;font-size:12px;text-align:center;"><span leaf="">【图片占位符N】</span></p>
 ```
 
 ---
@@ -209,8 +227,12 @@
 - ❌ 禁用贴纸风元素、动态分割线、无意义图标
 - ❌ 禁用多种强调色（全片只有橙色 #FF6B35 一种强调色）
 - ❌ 截图不加边框、不加圆角、不加阴影、不加说明文字
+- ❌ 插图不带其他媒体水印（不要带公众号名称、版权标识等来源水印）
+- ❌ 插图不加下标/图注（不要在图片下面加"图1：xxx"这类标注）
 - ❌ 段落不超过3行（手机屏幕），超过就拆段
 - ❌ 不用背景色块包裹正文
+- ❌ 三连卡（点赞/推荐/转发）已取消，正文不放置任何三连卡组件
+- ❌ 信息卡/提示卡每篇最多 1 个，正文回归素段落，不要卡片堆砌
 
 ---
 

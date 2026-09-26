@@ -500,7 +500,9 @@ async def remove_temp_cover(page):
     await page.evaluate("""() => { window.scrollTo(0, document.body.scrollHeight); }""")
     await page.wait_for_timeout(2000)
     removed = 0
-    for attempt in range(5):
+    # 上限 2 = 临时封面真图 + 粘贴伴随的 0x0 img。
+    # ⚠️ 不能调大：给已有插图的草稿换封面时（set_cover_to_draft.py），多删会把正文真图误删（2026-09-19 实测翻车，丢了 3 张图）。
+    for attempt in range(2):
         result = await page.evaluate("""() => {
           const pms = document.querySelectorAll('.ProseMirror');
           let target=null;
