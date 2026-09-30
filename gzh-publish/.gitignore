@@ -15,6 +15,7 @@ _ve1.txt
 
 # 脚本：只保留 SKILL.md/references 正式引用的脚本，其余开发调试脚本一律忽略
 scripts/*.py
+!scripts/add_body_images_to_draft.py
 !scripts/add_card_to_draft.py
 !scripts/add_cover_to_draft.py
 !scripts/analyze_viral_article.py
@@ -27,6 +28,8 @@ scripts/*.py
 !scripts/publish_draft.py
 !scripts/publish_draft_async.py
 !scripts/publish_full.py
+!scripts/publish_full_v2.py
+!scripts/set_cover_to_draft.py
 !scripts/validate_gzh_html.py
 !scripts/wrap_preview.py
 !scripts/stress_test.py
