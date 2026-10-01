@@ -13,6 +13,10 @@ _ve1.txt
 *.bak*
 *.bak_before_*
 
+# Python 编译产物（历史遗留曾误提交过 .pyc，勿再入库）
+__pycache__/
+*.pyc
+
 # 脚本：只保留 SKILL.md/references 正式引用的脚本，其余开发调试脚本一律忽略
 scripts/*.py
 !scripts/add_card_to_draft.py
