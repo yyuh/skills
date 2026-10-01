@@ -27,6 +27,12 @@ scripts/*.py
 !scripts/publish_draft.py
 !scripts/publish_draft_async.py
 !scripts/publish_full.py
+!scripts/publish_full_v2.py
+!scripts/set_cover_to_draft.py
+!scripts/add_body_images_to_draft.py
+!scripts/remove_tail_card_from_draft.py
+!scripts/video_upload_once.py
+!scripts/video_insert_stepB.py
 !scripts/validate_gzh_html.py
 !scripts/wrap_preview.py
 !scripts/stress_test.py
