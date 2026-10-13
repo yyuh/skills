@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """给**已存在**的草稿补设封面（不改正文、不重插名片）。
 
-复用 publish_full.py 的封面流程：打开指定 appmsgid 的草稿 → 把封面图粘贴到
+复用 publish_full_v2.py 的封面流程：打开指定 appmsgid 的草稿 → 把封面图粘贴到
 正文末尾（临时）→ 从正文选择设为封面 → 删除临时图 → 保存。
 
 用法：
@@ -14,7 +14,7 @@ import argparse
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from publish_full import (  # noqa: E402
+from publish_full_v2 import (  # noqa: E402
     log, shot, is_logged_in, close_original_dialog,
     insert_cover_temp, set_cover, remove_temp_cover, save_draft,
     SKILL_ROOT,

@@ -6,7 +6,7 @@
 「脚本会不会崩 / 会不会误存稿 / 会不会漏报错」等问题。纯离线、无副作用：
 - 不连接公众号后台、不写草稿、不删除任何现有产物（只读校验真实产物）。
 - 样本全部生成在临时目录，测完清理。
-- 对连线环节（publish_full.py）只测"坏参数前置拦截"，保证它安全退出、
+- 对连线环节（publish_full_v2.py）只测"坏参数前置拦截"，保证它安全退出、
   不会启动浏览器/连公众号。
 
 分层覆盖：
@@ -14,7 +14,7 @@
      豁免/畸形HTML/超长/深嵌套/乱码/stdin/CLI退出码
   B. fix_quotes.py         引号修复：幂等性/属性引号不误伤/边界
   C. generate_titles.py    标题评分：边界输入/稳定性
-  D. publish_full.py       存稿前置拦截：坏参数是否在开浏览器前被拒（不真连）
+  D. publish_full_v2.py    存稿前置拦截：坏参数是否在开浏览器前被拒（不真连）
   E. 组件库 + 抓取 + 真实产物回归
   F. 流水线闭环演练：坏文件 → 校验发现 → 修复 → 复验通过
 
@@ -373,14 +373,14 @@ def layer_C():
     run_case("C7 敏感/夸大标题：正常评分并标注", c7)
 
 # ---------------------------------------------------------------------------
-# D. publish_full.py 存稿前置拦截（只传坏参数，保证安全退出、不开浏览器）
+# D. publish_full_v2.py 存稿前置拦截（只传坏参数，保证安全退出、不开浏览器）
 # ---------------------------------------------------------------------------
 
 def layer_D(tmp):
-    print("\n=== D. publish_full.py 存稿前置拦截（不真连公众号） ===")
+    print("\n=== D. publish_full_v2.py 存稿前置拦截（不真连公众号） ===")
 
     def d1():
-        rc, out, err = run_py([SCRIPTS / "publish_full.py",
+        rc, out, err = run_py([SCRIPTS / "publish_full_v2.py",
                                tmp / "不存在.html",
                                "--title", "测试标题"],
                               timeout=60)
@@ -390,7 +390,7 @@ def layer_D(tmp):
     def d2():
         f = tmp / "ok.html"
         f.write_text(sample_legal(), encoding="utf-8")
-        rc, out, _ = run_py([SCRIPTS / "publish_full.py", f,
+        rc, out, _ = run_py([SCRIPTS / "publish_full_v2.py", f,
                              "--title", "测试标题",
                              "--cover", str(tmp / "无封面.png")], timeout=60)
         return check(rc == 1 and "ERR" in out, f"rc={rc} out={out[:200]}")
@@ -399,13 +399,13 @@ def layer_D(tmp):
     def d3():
         f = tmp / "ok2.html"
         f.write_text(sample_legal(), encoding="utf-8")
-        rc, out, err = run_py([SCRIPTS / "publish_full.py", f], timeout=60)
+        rc, out, err = run_py([SCRIPTS / "publish_full_v2.py", f], timeout=60)
         return check(rc == 2, f"rc={rc} err={err[:200]}")
     run_case("D3 缺 --title：argparse exit 2", d3)
 
     def d4():
         # html 参数指向目录：is_file()=False → 开浏览器前拦截（安全）
-        rc, out, _ = run_py([SCRIPTS / "publish_full.py", tmp,
+        rc, out, _ = run_py([SCRIPTS / "publish_full_v2.py", tmp,
                              "--title", "测试标题"], timeout=60)
         return check(rc == 1 and "ERR" in out, f"rc={rc} out={out[:200]}")
     run_case("D4 html 是目录：exit 1，拦截（不启动浏览器）", d4)
@@ -413,7 +413,7 @@ def layer_D(tmp):
     def d5():
         f = tmp / "ok3.html"
         f.write_text(sample_legal(), encoding="utf-8")
-        rc, out, _ = run_py([SCRIPTS / "publish_full.py", f,
+        rc, out, _ = run_py([SCRIPTS / "publish_full_v2.py", f,
                              "--title", "测试标题",
                              "--cover", str(tmp)], timeout=60)  # cover 指向目录
         return check(rc == 1 and "ERR" in out, f"rc={rc} out={out[:200]}")
