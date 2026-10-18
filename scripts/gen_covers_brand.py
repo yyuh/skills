@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 """按文章涉及品牌生成封面（logo 版）。
 
-原则（2026-10-18 用户要求）：封面插图跟着文章走——写到哪家就放哪家官方 logo，
-DeepSeek / GPT / Kimi / Claude / 千问 都是现成素材，不再一律塞一张截图。
+规则（2026-10-18 用户两次校准后定稿，简单说两句话）：
+  - **AI 新闻类**：是谁的新闻就放谁的 logo——DeepSeek 发模型放鲸鱼、GPT-6 Sol 放 OpenAI、
+    Kimi 放 K、Claude 出事放 Claude 星芒、苹果入华放 Apple × Qwen。
+  - **GitHub 开源项目类**：照旧用真实截图（选项A~E），不放品牌 logo——项目不是「某家的新闻」，
+    读者要看的是这个仓库/工具本身长什么样。
+  - 有真图但也想露品牌的新闻，可用 badge 形态（截图 + logo 圆形徽章）。
 
 两种形态:
   logo 版  style_dark_logo  —— 右侧卡片 = 品牌 logo 墙（品牌色光晕 + 官方标志 + 名号）
@@ -22,6 +26,7 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from cover_styles import style_dark_logo, style_dark_badge  # noqa: E402
 
+# ---------------- 新闻类（放品牌 logo） ----------------
 DEEPSEEK = dict(key="deepseek", brands=["deepseek"],
                 title="反超Opus 5", numline="77.0分 · 只管编程",
                 kicker="DeepSeek V4.1 Flash · 半夜偷发", accent="#4D6BFE",
@@ -43,9 +48,14 @@ GPTSOL = dict(key="gpt6sol", brands=["openai"],
               note="OpenAI · 快慢双模型", shot=None)
 
 CLAUDE = dict(key="claude", brands=["claude"],
-              title="逆向工程全自动", numline="261k星 · 底层看光",
-              kicker="Claude Code 生态实测", accent="#D97757",
-              note="Anthropic · 官方 logo", shot=None)
+              title="安全对齐没兜住", numline="断网环境 · 结果连了网",
+              kicker="Anthropic 自己承认 · 9月9日报告", accent="#D97757",
+              note="Claude · 官方 logo", shot=None)
+
+# ---------------- 开源项目类（照旧放截图，不走 logo 卡） ----------------
+# 例：rea 逆向工程（261k 星）、VoiceStudio、MiniCPM —— 一律用真实界面/仓库卡/自生成数据图，
+# 见 gen_covers_batch.py 的 style_dark 配置，不要套品牌 logo。
+
 
 
 def gen(a, mode="logo"):
