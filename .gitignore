@@ -39,7 +39,12 @@ scripts/*.py
 !scripts/analyze_viral_article.py
 !scripts/generate_titles.py
 !scripts/cover_styles.py
+!scripts/brand_logos.py
+!scripts/gen_covers_brand.py
 !scripts/gen_covers_batch.py
 !scripts/gen_minicpm_memory_graph.py
 !scripts/fix_body_image_in_draft.py
 scripts/batch*.ps1
+
+# logo 素材库自检对照图（运行时生成）
+assets/logos/_sheet.png

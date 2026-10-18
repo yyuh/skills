@@ -172,7 +172,7 @@ playwright install chromium
 - **开头三行钩子**：第一行「我做了什么具体动作+数字」→ 第二行「结论前置/反常识」→ 第三行「数字背书或痛点」；禁止「大家好/今天分享/随着AI发展」式铺垫。
 - **正文**：每段≤3 行，每 3–4 段一个粗体小标题，每篇至少 2 个加粗金句（单独成段、≤20字），操作步骤≤3 步。
 - **结尾**：封闭式提问（打字越少越好）→ 行动指令+理由 → 固定关注语「点击下方卡片，关注硅基研究员，每天一个 AI 资讯」+名片（publish_full_v2 自动加）；福利钩子（回复关键词）须先在后台配好自动回复，否则用「地址放评论区置顶」替代，不许写无法兑现的钩子。
-- **封面**：深色极客风（近黑底+终端装饰+左列超大标题数字强调色+右侧截图大卡），主标题 8–12 字 + 数字行 + kicker；配图按文章内容选（真实界面/工作流图/项目卡/自生成数据图/新闻截图），不一刀切；每篇强调色轮换。详细配方见下方「封面生成策略」。
+- **封面**：深色极客风（近黑底+终端装饰+左列超大标题数字强调色+右侧大卡），主标题 8–12 字 + 数字行 + kicker；配图按文章内容选（真实界面/工作流图/项目卡/自生成数据图/新闻截图），**文章主角是具体公司/模型时优先放该品牌官方 logo（DeepSeek/GPT/Kimi/Claude/千问，素材库 assets/logos）**，不一刀切；每篇强调色轮换。详细配方见下方「封面生成策略」。
 - 每条规则都含正反例和可直接套用模板，见 `references/rewrite-rules.md` 文末自检清单。
 
 ## 半角引号修复
@@ -238,7 +238,7 @@ PYTHONIOENCODING=utf-8 PYTHONUTF8=1 \
 
 3. **风格轮换**：
    - **正文排版风格**：技术类（GitHub项目 + AI新闻）一律用逛逛GitHub清爽技术风（默认）；深度观点类偶尔用瑞士极简。本号不做理财/修心，不再使用红白、日式等风格。
-   - **封面风格（2026-10-17 用户定稿：A 深色极客风）**：统一深色极客风——近黑底 `#0D1117` + 顶部终端三圆点装饰条 + 左列白色超大标题（数字段用每篇强调色）+ 右侧细边框截图大卡 + 底部信息条；**不加账号名以外的水印**。每篇一个强调色轮换（绿 `#7EE787`/青 `#56D4DD`/橙 `#FFA657`/紫 `#B48EFF`/蓝 `#6EA8FF`），不要所有封面都一个样。**旧「新丑撞色高饱和色块+粗黑框+左图右文」配方已废弃**（2026-10-17 用户反馈模板感丑），生成入口 `scripts/cover_styles.py`（含 B 杂志海报/C 渐变霓虹备选样品，未采用）。
+   - **封面风格（2026-10-17 用户定稿：A 深色极客风；2026-10-18 增补品牌 logo 卡）**：统一深色极客风——近黑底 `#0D1117` + 顶部终端三圆点装饰条 + 左列白色超大标题（数字段用每篇强调色）+ 右侧大卡 + 底部信息条；**不加账号名以外的水印**。右侧大卡二选一：**品牌 logo 墙**（文章主角是具体公司/模型时：DeepSeek 鲸鱼/GPT 结/Kimi K/Claude 星芒/苹果×千问，品牌色光晕垫底）或**真实截图卡**（主角是开源项目/工具时）。每篇一个强调色轮换（绿 `#7EE787`/青 `#56D4DD`/橙 `#FFA657`/紫 `#B48EFF`/蓝 `#6EA8FF`），不要所有封面都一个样。**旧「新丑撞色高饱和色块+粗黑框+左图右文」配方已废弃**（2026-10-17 用户反馈模板感丑）。生成入口 `scripts/cover_styles.py`（`style_dark` / `style_dark_logo` / `style_dark_badge`，含 B 杂志海报/C 渐变霓虹备选样品，未采用）。
 4. **正文全部校验后再统一出封面**：每篇 HTML 写完立即 `validate_gzh_html.py` + `fix_quotes.py` 复验至 0 ERROR 0 WARNING，5/10 篇正文全部合规后，再统一生成封面（避免写到一半发现风格/格式问题返工）。
 5. **封面批量生成**：每篇 `image_gen` 出 2.35:1 封面图（按内容类型分流，见下方「封面生成策略」：实物类无文字、资讯类可带字、日式更具体/抽象）→ 按类型 OCR/读图检查 → 不合规重生成 → `curl.exe -L -s -o outputs\xxx_cover.png` 下载落盘。
 5.5 **正文插图采集（2026-09-27 更新：3~4 张，真实截图优先，与下方「正文插图规范」一致）**：**每篇文章配 3~4 张正文插图，全部优先用真实截图**（项目README截图/演示图/性能对比表/产品界面/新闻配图）。GitHub项目类 → 找国内转载页面（网易/掘金/36氪/IT之家/微博）下载文章里的干净配图（项目README截图/架构图/演示图/性能对比表）；AI新闻类 → 直接用原文报道里的插图（推文截图/产品截图/数据图表/现场照片）；找不到足够真实插图时用AI生成对应概念图补充。**禁止截整个网页**（含标题栏/侧边栏/广告/评论区/分享按钮），只下载文章正文里的干净插图。插图插入位置根据文章内容决定（项目介绍后配示意图、数据部分配对比图、观点部分配概念图）。HTML里用可见占位符 `【图片占位符N】` 标记位置，存稿时用 `publish_full_v2.py --body-images 图1 图2 图3 图4` 自动粘贴替换（**不放引流卡**，2026-09-27 起引流卡已取消）。
@@ -285,6 +285,7 @@ PYTHONIOENCODING=utf-8 PYTHONUTF8=1 \
 >   - **选项C：GitHub 项目卡**：CLI 工具没界面时用 `opengraph.githubassets.com/1/<owner>/<repo>` 官方卡
 >   - **选项D：自生成数据图**：文章核心论点可视化（如「35B→3GB 内存对比」，`scripts/gen_minicpm_memory_graph.py` 模式：深色底+对比横条+大数字）
 >   - **选项E：新闻实证截图**：AI 新闻类用报道原文截图（如彭博社）
+>   - **选项F：品牌官方 logo 卡**（2026-10-18 新增，用户要求）：文章主角是某家具体公司/模型时，**放它自己的官方图标**——写 DeepSeek 放鲸鱼、写 GPT 放 OpenAI 结、写 Kimi 放 K、写 Claude 放星芒、苹果入华放 Apple × Qwen。见下方 ⑤
 >   - **禁止 AI 自绘品牌图标**；真实截图优先，水印要裁剪/填充处理
 >
 > **② 文字**：
@@ -295,6 +296,16 @@ PYTHONIOENCODING=utf-8 PYTHONUTF8=1 \
 > **③ 配色轮换池**（每篇一个强调色）：绿 `#7EE787` / 青 `#56D4DD` / 橙 `#FFA657` / 紫 `#B48EFF` / 蓝 `#6EA8FF`，不要重复
 >
 > **④ 备选风格（未采用，样品可再生产）**：B 杂志海报风（米白底+黑徽章+荧光笔高亮数字+硬阴影白卡）、C 渐变霓虹风（深蓝紫渐变+发光标题+发光边框卡）——`cover_styles.py` 里都留着，用户想换风格说一声即可。
+>
+> **⑤ 品牌 logo 卡（2026-10-18 用户要求「涉及 deepseek 就插 deepseek 图标，gpt、kimi 同理，根据文章来」）**：
+>   - **判断规则**：文章主角 = 某家具体公司/模型（DeepSeek V4.1、GPT-6 Sol、Kimi K2.8、Claude、苹果×千问、豆包、混元…）→ 优先品牌 logo 卡；主角是「某开源项目/工具」（VoiceStudio、MiniCPM 这种）→ 仍用真实截图（选项A~E），因为 logo 反而是通用图标、辨识度不如界面。
+>   - **两种形态**（`scripts/cover_styles.py`）：
+>     - `style_dark_logo(brands, title, numline, kicker, accent, brand_note=)` —— 右侧卡换成**品牌墙**：品牌色径向光晕 + 官方标志（单品牌 196px；多品牌 116px 并排 + × 号）+ 品牌名（consola 等宽）。适合纯资讯/无好截图时。
+>     - `style_dark_badge(screenshot, ..., brands)` —— **保留真实截图**，logo 做圆形徽章（80px，品牌色圆环）压在卡片左上角。适合「有真图也想露品牌」。
+>   - **素材库**：`assets/logos/` 下 27 个品牌白色透明 PNG（512px）+ `svg/` 原始文件，key 见 `scripts/brand_logos.py` 的 `BRANDS`（deepseek / openai / claude / kimi / moonshot / qwen / gemini / meta / metaai / mistral / bytedance / doubao / hunyuan / baidu / alibaba / minimax / perplexity / huggingface / github / apple / nvidia / ollama / langchain / suno / anthropic / chatgpt / google）。
+>   - **补品牌**：`python scripts/brand_logos.py --fetch <key...>`（走 simple-icons unpkg，v16 没收录的自动回退 v13/v11，如 openai 在 v16 已下架）；`--sheet` 出全量对照图肉眼验一遍；生成封面时**零网络**，只读本地 PNG。
+>   - **坑**：品牌色近白（Apple/GitHub/Ollama）打光会糊成灰雾 → 代码里 `_glow_rgb()` 亮度 >190 自动换强调色；logo 统一 `tint_logo()` 上品牌色，别用原始彩色图（会花）。
+
 >
 ### 正文插图规范（2026-09-27 用户更新：3~4 张全部真实截图优先，引流卡已取消）
 
@@ -457,6 +468,8 @@ PYTHONIOENCODING=utf-8 PYTHONUTF8=1 \
 ```
 gzh-publish/
 ├── SKILL.md
+├── assets/
+│   └── logos/                  # 品牌 logo 素材库：27 个品牌 512px 白色透明 PNG + svg 原件（封面品牌卡用，生成时零网络）
 ├── scripts/
 │   ├── publish_full_v2.py      # ⭐ 唯一主线：完整流水线（封面+名片首尾+3~4张正文插图+原创对话框，2026-09-30 起唯一推荐）
 │   ├── validate_gzh_html.py    # 合规校验（必跑）
@@ -471,8 +484,10 @@ gzh-publish/
 │   ├── fix_body_image_in_draft.py       # 给已有草稿原位替换「图片占位符N」补一张失败图（段内替换，不贴死引导语）
 │   ├── remove_tail_card_from_draft.py   # 删除草稿里的引流卡图（清理存量草稿）
 │   ├── check_cover.py          # 封面分享安全区校验（中央 42.6%）
-│   ├── cover_styles.py         # 封面 3 风格样品生成器（A 深色极客=现行/B 杂志海报/C 渐变霓虹）
+│   ├── cover_styles.py         # 封面风格库：style_dark（现行基线）/ style_dark_logo（品牌 logo 墙）/ style_dark_badge（截图+logo 徽章）/ B 杂志海报 / C 渐变霓虹 / D 瑞士 / E 蓝图
+│   ├── brand_logos.py          # 品牌 logo 素材库：--fetch 抓 simple-icons 官方 SVG → 光栅化 512px 白色透明 PNG（--list / --sheet）
 │   ├── gen_covers_batch.py     # 批量生成 A 风格封面（每篇按内容配图+强调色，现行入口）
+│   ├── gen_covers_brand.py     # 批量生成品牌 logo 版封面（按文章涉及品牌选 logo，logo/badge 两形态）
 │   ├── gen_minicpm_memory_graph.py # 自生成数据图样板：35B→3GB 内存对比（封面配图选项D模式）
 │   ├── fetch_ai_news.py        # 自助选题：抓 AI 媒体首页抽候选文章
 │   ├── analyze_viral_article.py# 公众号爆款文章 8 维度拆解
