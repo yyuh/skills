@@ -26,6 +26,7 @@ scripts/*.py
 !scripts/publish_full_v2.py
 !scripts/validate_gzh_html.py
 !scripts/check_structure.py
+!scripts/replace_draft_body.py
 !scripts/fix_quotes.py
 !scripts/wrap_preview.py
 !scripts/extract_docx.py

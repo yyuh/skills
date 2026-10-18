@@ -21,6 +21,7 @@
 import argparse
 import glob
 import json
+import math
 import os
 import re
 import sys
@@ -133,8 +134,11 @@ def verdict(r):
         err.append(f"字数 {r['chars']} < 500，信息量不足")
     if r["chars"] > 2000:
         err.append(f"字数 {r['chars']} > 2000，需拆分或删冗余")
-    if not 3 <= r["n_sec"] <= 5:
-        err.append(f"小节数 {r['n_sec']} 不在 3–5 之间")
+    # 小节数上限跟字数走：单节 ≤380 是硬指标，2000 字的稿子必然需要 5 节以上，
+    # 固定写死 3–5 会和单节字数要求互相打架（1617 字 / 380 ≈ 5 节，拆一节就超限）。
+    n_upper = max(5, math.ceil(r["chars"] / 300))
+    if r["n_sec"] < 3 or r["n_sec"] > n_upper:
+        err.append(f"小节数 {r['n_sec']} 不在 3–{n_upper} 之间（按 {r['chars']} 字推算上限）")
     for label, n in r["sec_lens"]:
         if n > 380:
             warn.append(f"小节「{label}」{n} 字偏长（建议 ≤380，拆一节）")
