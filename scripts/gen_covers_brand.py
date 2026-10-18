@@ -56,6 +56,42 @@ CLAUDE = dict(key="claude", brands=["claude"],
 # 例：rea 逆向工程（261k 星）、VoiceStudio、MiniCPM —— 一律用真实界面/仓库卡/自生成数据图，
 # 见 gen_covers_batch.py 的 style_dark 配置，不要套品牌 logo。
 
+# ---------------- 新闻封面示范集（8 条真实新闻，每篇一个强调色） ----------------
+NEWS_DEMO = [
+    dict(key="gpt6astra", brands=["openai"], accent="#10A37F",
+         kicker="OpenAI GPT-6 Astra · 企业版",
+         title="AI自己会点鼠标", numline="开软件 · 点按钮 · 填表单",
+         note="OpenAI · 官方 logo"),
+    dict(key="gemini38", brands=["gemini"], accent="#8E75B2",
+         kicker="谷歌 Gemini 3.8 Flash · 9月2日",
+         title="六周连发三款模型", numline="一月一款 · $0.75/百万",
+         note="Google Gemini · 官方 logo"),
+    dict(key="qwenmax", brands=["qwen"], accent="#615CED",
+         kicker="阿里 Qwen3.8-Max · 旗舰更新",
+         title="前端编程全球第一", numline="一句话生成能用的网页",
+         note="阿里千问 · 官方 logo"),
+    dict(key="dsipo", brands=["deepseek"], accent="#4D6BFE",
+         kicker="DeepSeek 要上市了 · 9月9日",
+         title="5000亿估值杀到", numline="科创板 · 涨价要来了",
+         note="DeepSeek · 官方 logo"),
+    dict(key="pplxqwen", brands=["perplexity", "qwen"], accent="#1FB8CD",
+         kicker="Perplexity 转投千问 · 9月8日",
+         title="硅谷独角兽换中国模型", numline="Qwen3.8-27B · 跑在本地",
+         note="Perplexity × Qwen · 本地 Agent"),
+    dict(key="qwenoffice", brands=["qwen"], accent="#FF8A3D",
+         kicker="阿里千问办公 · 上线首月",
+         title="3000万人抢着用", numline="每40个中国人就有1个",
+         note="千问办公 · 官方 logo"),
+    dict(key="metamuse", brands=["meta"], accent="#0866FF",
+         kicker="Meta Muse Spark 1.3",
+         title="编程反超GPT-5.6", numline="同一份活 · 少花25%",
+         note="Meta · 官方 logo"),
+    dict(key="nvhf", brands=["nvidia", "huggingface"], accent="#76B900",
+         kicker="英伟达收购 Hugging Face",
+         title="英伟达买下AI界GitHub", numline="129亿现金 · 10亿留人",
+         note="NVIDIA × Hugging Face"),
+]
+
 
 
 def gen(a, mode="logo"):
@@ -80,6 +116,14 @@ def main():
             print("skip (缺截图):", a["key"], mode)
             continue
         out = f"outputs/covb_{a['key']}_{mode}.png"
+        img.save(out)
+        print("saved:", out, img.size)
+
+    # 新闻示范集：8 条真实新闻，统一 logo 形态
+    for a in NEWS_DEMO:
+        img = style_dark_logo(a["brands"], a["title"], a["numline"], a["kicker"],
+                              a["accent"], brand_note=a.get("note", ""))
+        out = f"outputs/covn_{a['key']}.png"
         img.save(out)
         print("saved:", out, img.size)
 
