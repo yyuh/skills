@@ -21,7 +21,7 @@ __pycache__/
 # 历史脚本归档目录（本地留存、可查可逆，不入库）
 scripts/archive/
 
-# scripts 根目录只跟踪下列 15 个主线脚本
+# scripts 根目录只跟踪下列 19 个主线脚本
 scripts/*.py
 !scripts/publish_full_v2.py
 !scripts/validate_gzh_html.py
@@ -38,4 +38,8 @@ scripts/*.py
 !scripts/fetch_ai_news.py
 !scripts/analyze_viral_article.py
 !scripts/generate_titles.py
+!scripts/cover_styles.py
+!scripts/gen_covers_batch.py
+!scripts/gen_minicpm_memory_graph.py
+!scripts/fix_body_image_in_draft.py
 scripts/batch*.ps1
