@@ -184,6 +184,10 @@ PYTHONIOENCODING=utf-8 PYTHONUTF8=1 \
   python scripts/fix_quotes.py "outputs/xxx_排版_新丑撞色(neo-brutalism).html"
 ```
 
+**代码块自动豁免（2026-10-19 修）**：脚本会先把深色代码块（`<section style="background:#1E293B">`）和 `<pre>` 整段摘成占位符，处理完正文再原样放回。**此前它会把代码里的引号也转成全角，读者复制代码直接 SyntaxError**——写过含 Python / cURL 示例的稿子务必知道这条，别再手工救。
+
+> 同类工具：`scripts/shot_page.py <url> <out.png>` 截整屏（可 `--scroll/--full`）；`scripts/shot_at.py <url> <out.png> --text "计费"` 按页面锚点文字滚到指定小节再截，抓官方文档的价格表/参数表比盲滚像素可靠。
+
 ## 产物规范
 
 - 纯 `<section>…</section>` 正文片段，从全局容器开始，不包 `<!DOCTYPE>/<html>/<head>/<body>`。
@@ -494,7 +498,9 @@ gzh-publish/
 │   ├── publish_full_v2.py      # ⭐ 唯一主线：完整流水线（封面+名片首尾+3~4张正文插图+原创对话框，2026-09-30 起唯一推荐）
 │   ├── validate_gzh_html.py    # 合规校验（必跑：标签/引号/密度）
 │   ├── check_structure.py      # 结构体检（必跑：小节字数/加粗金句/结尾三件套/配图数）
-│   ├── fix_quotes.py           # 半角引号→全角（WARNING 清零）
+│   ├── fix_quotes.py           # 半角引号→全角（WARNING 清零；代码块自动豁免）
+│   ├── shot_page.py            # 网页截图（整屏/滚动/全页，内置 UA 与代理）
+│   ├── shot_at.py              # 按页面锚点文字滚动截图（抓官方文档的价格表/参数表）
 │   ├── wrap_preview.py         # 生成预览页
 │   ├── extract_docx.py         # docx → Markdown
 │   ├── component_lint.py       # 组件库源头检查

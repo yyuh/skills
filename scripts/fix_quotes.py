@@ -6,6 +6,10 @@
 - 双引号 "xxx" → “xxx”（中文正文里几乎一定是中文引号）
 - 单引号 'xxx' → ‘xxx’：仅当引号内部含中文字符才转，
   避免误伤英文撇号（it's、don't）与纯英文引号（'hello'）
+
+⚠️ 代码块必须先摘出来（2026-10-19 踩坑）：深色代码块 `<section style="background:#1E293B">`
+和 `<pre>` 里的引号改成全角后，读者复制代码会直接报 SyntaxError。脚本现在先把代码块
+整段替换成占位符，处理完正文再原样放回。
 用法：python fix_quotes.py <html文件路径>
 """
 import os
@@ -14,6 +18,12 @@ import sys
 
 # 中文字符范围（用于判断单引号是否该转全角）
 CJK = re.compile(r"[\u4e00-\u9fff]")
+
+# 代码块：深色代码块整段 / <pre>。里面的引号是代码语法，绝不能动
+CODE_BLOCK = re.compile(
+    r'<section[^>]*background:\s*#1E293B.*?</section>|<pre\b.*?</pre>',
+    re.S | re.I,
+)
 
 
 def main():
@@ -34,6 +44,15 @@ def main():
 
     count = [0]
 
+    # 先把代码块整段摘出来，避免代码里的引号被改成全角
+    blocks = []
+
+    def stash(m):
+        blocks.append(m.group(0))
+        return "[[CODEBLOCK%d]]" % (len(blocks) - 1)
+
+    html = CODE_BLOCK.sub(stash, html)
+
     def fix_text(m):
         text = m.group(1)
         # 成对替换 "xxx" → “xxx”
@@ -50,6 +69,11 @@ def main():
         return ">" + new + "<"
 
     html = re.sub(r">([^<>]+)<", fix_text, html)
+
+    # 代码块原样放回
+    if blocks:
+        html = re.sub(r"\[\[CODEBLOCK(\d+)\]\]",
+                      lambda m: blocks[int(m.group(1))], html)
 
     try:
         with open(path, "w", encoding="utf-8") as f:
