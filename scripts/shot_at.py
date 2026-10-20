@@ -66,10 +66,12 @@ async def main():
     ap.add_argument("--wait", type=float, default=5.0)
     ap.add_argument("--width", type=int, default=1280)
     ap.add_argument("--height", type=int, default=900)
+    ap.add_argument("--no-proxy", action="store_true",
+                    help="直连不走代理（github.com 等被代理拦的站点用这个）")
     a = ap.parse_args()
 
     kw = dict(headless=True, args=["--disable-blink-features=AutomationControlled"])
-    if PROXY:
+    if PROXY and not a.no_proxy:
         kw["proxy"] = {"server": PROXY}
 
     async with async_playwright() as p:
