@@ -632,44 +632,40 @@ async def _set_cover_upload_fallback(page, cover_path):
     return True
 
 async def remove_temp_cover(page):
-    """删除正文末尾临时插入的封面图（保留名片图片），循环删到没有非名片图片为止"""
+    """删除正文末尾临时插入的封面图（只删最后一张非名片图 = 刚粘贴的临时封面）。
+
+    注意：不能循环删到「没有非名片图」，那会把正文里已有的真实插图也一并删光。
+    insert_cover_temp 把封面粘贴在正文末尾，所以临时封面一定是最后一张非名片 img。
+    """
     log("删除临时封面图...")
     await page.evaluate("""() => { window.scrollTo(0, document.body.scrollHeight); }""")
     await page.wait_for_timeout(2000)
-    removed = 0
-    for attempt in range(5):
-        result = await page.evaluate("""() => {
-          const pms = document.querySelectorAll('.ProseMirror');
-          let target=null;
-          for (const pm of pms){ if ((pm.getAttribute('data-placeholder')||'').indexOf('标题')<0){target=pm;break;} }
-          if (!target) return 'NO_PM';
-          const imgs = target.querySelectorAll('img');
-          for (let i = imgs.length - 1; i >= 0; i--) {
-            const img = imgs[i];
-            const inCard = img.closest('.mp_profile_iframe_wrp') || img.closest('[class*="profile"]');
-            if (!inCard) {
-              // 向上找section容器删除
-              let parent = img;
-              for (let j = 0; j < 8; j++) {
-                if (parent.parentElement && parent.parentElement.tagName === 'SECTION') {
-                  parent.parentElement.remove();
-                  return 'REMOVED_SECTION';
-                }
-                parent = parent.parentElement;
-                if (!parent) break;
-              }
-              img.remove();
-              return 'REMOVED_IMG';
+    result = await page.evaluate("""() => {
+      const pms = document.querySelectorAll('.ProseMirror');
+      let target=null;
+      for (const pm of pms){ if ((pm.getAttribute('data-placeholder')||'').indexOf('标题')<0){target=pm;break;} }
+      if (!target) return 'NO_PM';
+      const imgs = target.querySelectorAll('img');
+      for (let i = imgs.length - 1; i >= 0; i--) {
+        const img = imgs[i];
+        const inCard = img.closest('.mp_profile_iframe_wrp') || img.closest('[class*="profile"]');
+        if (!inCard) {
+          let parent = img;
+          for (let j = 0; j < 8; j++) {
+            if (parent.parentElement && parent.parentElement.tagName === 'SECTION') {
+              parent.parentElement.remove();
+              return 'REMOVED_SECTION';
             }
+            parent = parent.parentElement;
+            if (!parent) break;
           }
-          return 'NO_IMG';
-        }""")
-        if result in ('NO_IMG', 'NO_PM'):
-            break
-        removed += 1
-        log(f"第{attempt+1}次删除: {result}")
-        await page.wait_for_timeout(500)
-    log(f"共删除 {removed} 张临时图")
+          img.remove();
+          return 'REMOVED_IMG';
+        }
+      }
+      return 'NO_IMG';
+    }""")
+    log(f"删除临时封面结果: {result}")
 
 async def insert_card(page, card_name="硅基研究员"):
     """插入公众号名片并置底"""

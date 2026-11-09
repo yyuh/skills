@@ -58,6 +58,16 @@ BRANDS = {
     "ollama":      ("ollama",      "Ollama",       "#F0F6FC"),
     "langchain":   ("langchain",   "LangChain",    "#1C3C3C"),
     "suno":        ("suno",        "Suno",         "#F0F6FC"),
+    "block":       ("block",       "Block",        "#F0F6FC"),
+    "square":      ("square",      "Square",       "#F0F6FC"),
+    "tesla":       ("tesla",       "Tesla",        "#E82127"),
+    "agora":       ("agora",       "Agora",       "#099DFD"),
+    "microsoft":   ("microsoft",   "Microsoft",   "#5E5E5E"),
+    "tencent":     ("tencentqq",   "腾讯",         "#0052D9"),
+    "meituan":     ("meituan",     "美团",         "#FFD100"),
+    "xiaomi":      ("xiaomi",      "小米",         "#FF6900"),
+    "xai":         ("xai",         "xAI",          "#F0F6FC"),
+    "grok":        ("xai",         "Grok",         "#F0F6FC"),
 }
 
 UNPKG = "https://unpkg.com/simple-icons@{}/icons/{}.svg"
