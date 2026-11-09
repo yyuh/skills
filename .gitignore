@@ -38,6 +38,7 @@ scripts/*.py
 !scripts/add_card_to_draft.py
 !scripts/add_body_images_to_draft.py
 !scripts/remove_tail_card_from_draft.py
+!scripts/notify_fail.py
 !scripts/check_cover.py
 !scripts/fetch_ai_news.py
 !scripts/analyze_viral_article.py

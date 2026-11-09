@@ -57,6 +57,19 @@ def log(msg):
     except Exception:
         pass
 
+# ---- 失败告警：桌面 toast + 标记文件（供定时任务/其他 Agent 检测）----
+try:
+    import importlib.util as _ilu
+    _nspec = _ilu.spec_from_file_location(
+        "notify_fail", str(Path(__file__).resolve().parent / "notify_fail.py"))
+    _nmod = _ilu.module_from_spec(_nspec)
+    _nspec.loader.exec_module(_nmod)
+    notify_failure = _nmod.notify_failure
+except Exception as _ne:
+    def notify_failure(reason, source="publish_full_v2.py"):
+        log(f"[notify] 告警模块加载失败: {_ne}")
+
+
 async def shot(page, name):
     path = str(SKILL_ROOT / "outputs" / f"full_{name}.png")
     try:
@@ -910,6 +923,7 @@ async def main():
                     await page.screenshot(path=qr_path)
             if not ok:
                 log("ERR: 扫码超时")
+                notify_failure("登录失效（扫码超时）：请手机微信扫浏览器二维码，扫完重跑存稿脚本", source="publish_full_v2.py")
                 await ctx.close(); sys.exit(1)
             log("登录成功")
 
@@ -917,6 +931,7 @@ async def main():
         page = await open_editor(ctx, page)
         if not page:
             log("ERR: 无法打开编辑器")
+            notify_failure("无法打开公众号编辑器，请检查网络与登录态后重跑", source="publish_full_v2.py")
             await ctx.close(); sys.exit(1)
         await shot(page, "01_editor")
 
@@ -1067,6 +1082,7 @@ async def main():
             log("DONE: 已存入草稿箱" + ("" if cover_ok is None else "（封面已验证）"))
         sys.exit(0)
     log("WARN: 请人工检查草稿箱")
+    notify_failure("存稿结束但未拿到 appmsgid，请人工检查草稿箱", source="publish_full_v2.py")
     sys.exit(0)
 
 if __name__ == "__main__":
